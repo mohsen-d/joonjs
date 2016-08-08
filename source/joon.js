@@ -94,6 +94,20 @@ window.$ = window.joon = (function(){
     return this;
   }
 
+  joon.prototype.zoomTo = function(duration, [to, ease]){
+    for (elm of this.elements) {
+      elm.style.transform = "scale(" + to + ")";
+      if(elm.style.transition.trim() !== ""){
+        elm.style.transition += ", transform " + duration + "s " + ease;
+      }
+      else{
+        elm.style.transition = "transform " + duration + "s " + ease;
+      }
+    }
+
+    return this;
+  }
+
   function getElements(selector){
 
     selector = selector.toLowerCase();
