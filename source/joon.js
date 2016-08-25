@@ -2,14 +2,31 @@ window.$ = window.joon = (function(){
 
   function joon(selector) {
     var self = this;
-    self.selector = selector;
-    self.elements = getElements(selector);
+    if(selector.startsWith("@")){
+      self.templateName = selector.substring(1);
+      self.isTemplate = true;
+    }else{
+      self.selector = selector;
+      self.elements = getElements(selector);
+      self.animationLength = 0;
+      self.shallLoop = false;
+      self.totalLaps = -1;
+      self.completedLaps = 0;
+    }
+
     self.actions = [];
-    self.animationLength = 0;
-    self.shallLoop = false;
-    self.totalLaps = -1;
-    self.completedLaps = 0;
     self.name = "this is joon.js";
+  }
+
+  joon.prototype.save = function(){
+    var self = this;
+    var templateActionsName = self.templateName + "_actions";
+    joon.prototype[templateActionsName] = self.actions;
+    joon.prototype[self.templateName] = function(){
+      this.actions = joon.prototype[templateActionsName];
+      this.run();
+      return this;
+    };
   }
 
   joon.prototype.printElements = function(){
@@ -22,13 +39,27 @@ window.$ = window.joon = (function(){
   joon.prototype.at = function(start, duration, func, ...funcArgs){
     var self = this;
 
+    if(joon.prototype[func + "_actions"] != undefined){
+      duration = calcAnimationLength(joon.prototype[func + "_actions"]);
+      console.log(duration);
+    }
+
     self.actions.push({name: func, args: funcArgs, start: start, duration: duration});
-
-    setTimeout(function(){
-      self[func](duration, funcArgs);
-    }, start*1000);
-
     return self;
+  }
+
+  joon.prototype.run = function(){
+    var self = this;
+    for (action of self.actions) {
+      (function(action){
+        setTimeout(function(){
+          console.log(action);
+          self[action.name](action.duration, action.args);
+        }, action.start*1000);
+      })(action);
+    }
+
+    return this;
   }
 
   joon.prototype.loop = function(laps){
@@ -36,33 +67,10 @@ window.$ = window.joon = (function(){
     self.shallLoop = true;
     self.totalLaps = laps || -1;
     self.animationLength = calcAnimationLength(self.actions);
-    self.loopTimeout = setTimeout(self.runLoop.bind(self), self.animationLength * 1000);
 
-    return self;
-  }
-
-  joon.prototype.runLoop = function(){
-    var self = this;
-
-    if(!self.shallLoop){
-      return;
+    for (var i = 0; i <= laps; i++) {
+      setTimeout(self.run.bind(self), (i*self.animationLength) * 1000);
     }
-
-    if(self.totalLaps >= 0 && self.completedLaps >= self.totalLaps){
-      return;
-    }
-
-    for (action of self.actions) {
-      (function(action){
-        setTimeout(function(){
-          self[action.name](action.duration, action.args)
-        },  action.start * 1000);
-      })(action);
-    }
-
-    self.loopTimeout = setTimeout(self.runLoop.bind(self), self.animationLength * 1000);
-
-    self.completedLaps++;
   }
 
   joon.prototype.moveTo = function(duration, [x, y, ease]){
@@ -139,11 +147,11 @@ window.$ = window.joon = (function(){
 
   function getElements(selector){
 
-    selector = selector.toLowerCase();
-
     if(isEmpty(selector)){
       return [];
     }
+
+    selector = selector.toLowerCase();
 
     if(/^\./.test(selector)){
       var className = selector.substring(1);
@@ -177,5 +185,7 @@ window.$ = window.joon = (function(){
   return function(selector){
     return new joon(selector);
   };
+
+  //return joon;
 
 })();
