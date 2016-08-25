@@ -2,6 +2,7 @@ window.$ = window.joon = (function(){
 
   function joon(selector) {
     var self = this;
+    self.selector = selector;
     self.elements = getElements(selector);
     self.actions = [];
     self.animationLength = 0;
@@ -94,9 +95,37 @@ window.$ = window.joon = (function(){
     return this;
   }
 
-  joon.prototype.zoomTo = function(duration, [to, ease]){
+  joon.prototype.scaleTo = function(duration, [x, y, ease]){
     for (elm of this.elements) {
-      elm.style.transform = "scale(" + to + ")";
+      elm.style.transform = "scale(" + x + ", " + y + ")";
+      if(elm.style.transition.trim() !== ""){
+        elm.style.transition += ", transform " + duration + "s " + ease;
+      }
+      else{
+        elm.style.transition = "transform " + duration + "s " + ease;
+      }
+    }
+
+    return this;
+  }
+
+  joon.prototype.rotate = function(duration, [degree, ease]){
+    for (elm of this.elements) {
+      elm.style.transform = "rotate(" + degree + "deg)";
+      if(elm.style.transition.trim() !== ""){
+        elm.style.transition += ", transform " + duration + "s " + ease;
+      }
+      else{
+        elm.style.transition = "transform " + duration + "s " + ease;
+      }
+    }
+
+    return this;
+  }
+
+  joon.prototype.skew = function(duration, [x, y, ease]){
+    for (elm of this.elements) {
+      elm.style.transform = "skew(" + x + "deg, " + y + "deg)";
       if(elm.style.transition.trim() !== ""){
         elm.style.transition += ", transform " + duration + "s " + ease;
       }
