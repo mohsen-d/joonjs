@@ -36,12 +36,33 @@ window.$ = window.joon = (function(){
     return this;
   }
 
+  joon.prototype.on = function(selector, eventName){
+    var self = this;
+    var triggerElements = getElements(selector);
+
+    if(triggerElements.length > 0){
+      for (elm of triggerElements) {
+        if (elm.addEventListener){
+             elm.addEventListener(eventName, function(){
+                self.run();
+             }, false);
+          }
+          else {
+            elm.attachEvent('on' + eventName, function(){
+                self.run();
+            });
+          }
+      }
+    }
+
+    return self;
+  }
+
   joon.prototype.at = function(start, duration, func, ...funcArgs){
     var self = this;
 
     if(joon.prototype[func + "_actions"] != undefined){
       duration = calcAnimationLength(joon.prototype[func + "_actions"]);
-      console.log(duration);
     }
 
     self.actions.push({name: func, args: funcArgs, start: start, duration: duration});
@@ -53,7 +74,6 @@ window.$ = window.joon = (function(){
     for (action of self.actions) {
       (function(action){
         setTimeout(function(){
-          console.log(action);
           self[action.name](action.duration, action.args);
         }, action.start*1000);
       })(action);
@@ -151,23 +171,7 @@ window.$ = window.joon = (function(){
       return [];
     }
 
-    selector = selector.toLowerCase();
-
-    if(/^\./.test(selector)){
-      var className = selector.substring(1);
-      return document.getElementsByClassName(className);
-    }
-
-    if(/^\#/.test(selector)){
-      var elementId = selector.substring(1);
-      return [document.getElementById(elementId)];
-    }
-
-    if(/^[a-z]/i.test(selector)){
-      return document.getElementsByTagName(selector);
-    }
-
-    return [];
+    return document.querySelectorAll(selector);
   }
 
   function isEmpty(val){
