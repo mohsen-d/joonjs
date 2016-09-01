@@ -11,7 +11,6 @@ window.$ = window.joon = (function(){
       self.elements = getElements(selector);
       self.animationLength = 0;
       self.totalLaps = 0;
-      self.completedLaps = 0;
     }
 
     self.actions = [];
@@ -22,9 +21,12 @@ window.$ = window.joon = (function(){
 
   joon.prototype.initFunctions = {
     moveTo: function(elm){
-      var initialPosition = getTransformFunc(elm, "translate") || [0, elm.offsetLeft, elm.offsetTop];
-      elm.initialX = parseFloat(initialPosition[2]);
-      elm.initialY = parseFloat(initialPosition[1]);
+      var initialTranslate = getTransformFunc(elm, "translate") || [0, 0, 0];
+      var initialTop = window.getComputedStyle(elm, null).getPropertyValue("top");
+      var initialLeft = window.getComputedStyle(elm, null).getPropertyValue("left");
+
+      elm.initialX = parseFloat(initialTranslate[2]) + parseFloat(initialTop);
+      elm.initialY = parseFloat(initialTranslate[1]) + parseFloat(initialLeft);
     },
 
     fadeTo: function(elm){
@@ -71,13 +73,11 @@ window.$ = window.joon = (function(){
       for (elm of triggerElements) {
         if (elm.addEventListener){
              elm.addEventListener(eventName, function(){
-               self.completedLaps = 0;
                 self.run();
              }, false);
           }
           else {
             elm.attachEvent('on' + eventName, function(){
-                self.completedLaps = 0;
                 self.run();
             });
           }
@@ -179,12 +179,11 @@ window.$ = window.joon = (function(){
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
 
-        var newX = changeInX != 0 ? tweenFunc(t, elm.initialX, changeInX, duration * 1000) : 0;
-        var newY = changeInY != 0 ? tweenFunc(t, elm.initialY, changeInY, duration * 1000) : 0;
+        var newX = changeInX != 0 ? tweenFunc(t, elm.initialX, changeInX, duration * 1000) : elm.initialX;
+        var newY = changeInY != 0 ? tweenFunc(t, elm.initialY, changeInY, duration * 1000) : elm.initialY;
 
-        var translate = "translate(" + (newY - elm.initialY) + "px," + (newX - elm.initialX) + "px)";
-
-        setTransformFunc(elm, "translate", translate);
+        elm.style.top = newX;
+        elm.style.left = newY;
         elm.currentX = newX;
         elm.currentY = newY;
       }
@@ -192,9 +191,8 @@ window.$ = window.joon = (function(){
     else{
       action.completed = true;
       for (elm of self.elements) {
-        elm.style.top = elm.initialX = elm.currentX;
-        elm.style.left = elm.initialY = elm.currentY;
-        setTransformFunc(elm, "translate", "translate(0, 0)");
+        elm.style.top = elm.initialX = elm.currentX = x;
+        elm.style.left = elm.initialY = elm.currentY = y;
       }
     }
 
@@ -220,7 +218,7 @@ window.$ = window.joon = (function(){
     else{
       action.completed = true;
       for (elm of self.elements) {
-        elm.initialOpacity = elm.currentOpacity;
+        elm.style.opacity = elm.initialOpacity = elm.currentOpacity = fadeLevel;
       }
     }
 
@@ -251,8 +249,9 @@ window.$ = window.joon = (function(){
     else{
       action.completed = true;
       for (elm of self.elements) {
-        elm.initialScaleX = elm.currentScaleX;
-        elm.initialScaleY = elm.currentScaleY;
+        elm.initialScaleX = elm.currentScaleX = x;
+        elm.initialScaleY = elm.currentScaleY = y;
+        setTransformFunc(elm, "scale", "scale(" + y + ", " + x + ")");
       }
     }
 
@@ -281,7 +280,8 @@ window.$ = window.joon = (function(){
     else{
       action.completed = true;
       for (elm of self.elements) {
-        elm.initialRotateDegree = elm.currentRotateDegree;
+        elm.initialRotateDegree = elm.currentRotateDegree = degree;
+        setTransformFunc(elm, "rotate", "rotate(" + degree + "deg)");
       }
     }
 
@@ -305,7 +305,6 @@ window.$ = window.joon = (function(){
         var newY = changeInY != 0 ? tweenFunc(t, elm.initialSkewY, changeInY, duration * 1000) : elm.initialSkewY;
 
         var skew = "skew(" + newY + "deg, " + newX + "deg)";
-
         setTransformFunc(elm, "skew", skew);
         elm.currentSkewX = newX;
         elm.currentSkewY = newY;
@@ -314,8 +313,9 @@ window.$ = window.joon = (function(){
     else{
       action.completed = true;
       for (elm of self.elements) {
-        elm.initialSkewX = elm.currentSkewX;
-        elm.initialSkewY = elm.currentSkewY;
+        elm.initialSkewX = elm.currentSkewX = x;
+        elm.initialSkewY = elm.currentSkewY = y;
+        setTransformFunc(elm, "skew", "skew(" + y + "deg, " + x + "deg)");
       }
     }
 
@@ -358,6 +358,7 @@ window.$ = window.joon = (function(){
   function getTransformFunc(elm, funcName){
     var checkRegex = new RegExp(funcName, "i");
     var matchRegex = new RegExp(funcName + "\\((.*?)(?:(?:\\,)(.*?))?\\)", "i");
+    var style = funcName == "moveTo"
     if(checkRegex.test(elm.style.transform)){
       return elm.style.transform.match(matchRegex);
     }
