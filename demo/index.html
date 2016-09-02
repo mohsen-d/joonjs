@@ -2,12 +2,116 @@
 <head>
   <meta charset="utf-8">
   <link rel="stylesheet" href="style.css" type="text/css" />
+  <style>
+    body{
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+    .title{
+      position: relative;
+      width: 500px;
+      margin: 0 auto;
+      text-align: center;
+      font-size: 11em;
+      padding: 0;
+      font-family: fantasy;
+      color: #FF004C;
+    }
+    .title > div{
+      position: relative;
+      display: inline-block;
+      top: -400px;
+    }
+    #js{
+      font-size: .5em;
+    }
+    .sub_title{
+      width: 500px;
+      margin: 0 auto auto;
+      padding: 0 auto auto;
+      position: relative;
+      top: 1000px;
+      text-align:  center;
+      font-family: fantasy;
+      font-size:3.5em;
+      color: #595959;
+    }
+    .developer{
+      color: #FF6332;
+      position: relative;
+      font-family:verdana;
+      width: 500px;
+      top: 1000px;
+      text-align: center;
+      margin: auto;
+      font-size: 1.6em;
+    }
+  </style>
 </head>
 <body>
-  <h1 id="title" class="anim">joon.js</h1>
-  <p id="slogan" class="anim">An animating library</p>
+
+  <h1 class="title"><div id="j">j</div><div id="first_o">o</div><div id="second_o">o</div><div id="n">n</div><div id="js">.js</div></h1>
+  <h2 class="sub_title" style="transform: rotate(-14deg)">animation library</h2>
+  <h3 class="developer" style="transform: rotate(-12deg)">by Mohsen Dorparasti</h3>
   <!-- scripts -->
+  <script src="../source/tweens.js"></script>
   <script src="../source/joon.js"></script>
-  <script src="script.js"></script>
+  <script>
+    $("#first_o")
+      .at(.3, .5, "moveTo", 20, "0", easeOutBack)
+      .at(5.2, .4, "moveTo", 20, -20, easeInQuad)
+      .run();
+
+    $("#second_o")
+      .at(.4, .5, "moveTo", 15, 0, easeOutBack)
+      .at(4.9, .7, "moveTo", 15, -40, easeInQuad)
+      .run();
+
+
+      $("#j")
+        .at(.8, .5, "moveTo", 0, 0, easeInOutBack)
+        .run();
+
+      $("#n")
+        .at(1.5, .5, "moveTo", 80, 0, easeInOutBack)
+        .at(2.5, .3, "moveTo", 0, 0, easeInOutBack)
+        .at(3.1, .1, "moveTo", 10, 0, easeOutQuad)
+        .at(4.5, 1, "moveTo", 10, -60, easeInQuad)
+        .run();
+
+      $("#js")
+        .at(1, .2, "moveTo", 5, 0, easeInOutBack)
+        .at(6, 0.1, "moveTo", -10, 0, easeInQuad)
+        .at(6.1, 0.1, "moveTo", 0, -10, easeInQuad)
+        .at(6.3, 0.1, "moveTo", -10, -10, easeInQuad)
+        .at(6.4, 0.1, "moveTo", 0, -20, easeInQuad)
+        .at(6.6, 0.1, "moveTo", -10, -20, easeInQuad)
+        .at(6.7, 0.1, "moveTo", 0, -30, easeInQuad)
+        .at(7.5, 0.1, "moveTo", -10, -30, easeInQuad)
+        .at(7.6, 0.1, "moveTo", 0, -40, easeInQuad)
+        .at(8, 0.1, "moveTo", -10, -40, easeInQuad)
+        .at(8.1, 0.1, "moveTo", 0, -50, easeInQuad)
+        .at(8.2, 0.1, "moveTo", -10, -50, easeInQuad)
+        .at(8.3, 0.1, "moveTo", 0, -60, easeInQuad)
+        .run();
+
+    $(".title")
+      .at(3.95, .2, "rotate", -10, easeOutQuad)
+      .run();
+
+    $(".sub_title")
+      .at(3.5, .5, "moveTo", -10, 0, easeInQuad)
+      .run();
+
+    $(".developer")
+      .at(4, .5, "moveTo", -10, 0, easeInQuad)
+      .at(5, .2, "rotate", -10, easeOutQuad)
+      .at(5.2, .2, "rotate", -20, easeInQuad)
+      .at(5.4, .2, "rotate", -14, easeInQuad)
+      .run();
+
+  </script>
 </body>
 </html>
