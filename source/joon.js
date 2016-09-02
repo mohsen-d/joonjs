@@ -322,6 +322,46 @@ window.$ = window.joon = (function(){
     return self;
   }
 
+  joon.prototype.changeColor = function(action, startTime, duration, [property, value, tweenFunc]){
+    var self = this;
+    var t = Date.now() - startTime;
+
+    if(t < 0){
+      return this;
+    }
+
+    if (t <= duration*1000) {
+      for (elm of this.elements) {
+        if(!elm.initialRgbColor)
+        {
+          elm.initialRgbColor = extractRgb(window.getComputedStyle(elm, null).getPropertyValue(property));
+        }
+
+        var finalRgbColor = hexToRgb(value);
+
+        var changeInRgbColor = calcRgbDistance(elm.initialRgbColor, finalRgbColor);
+
+        var newRed = Math.round(tweenFunc(t, elm.initialRgbColor[0], changeInRgbColor[0], duration * 1000));
+        var newGreen = Math.round(tweenFunc(t, elm.initialRgbColor[1], changeInRgbColor[1], duration * 1000));
+        var newBlue = Math.round(tweenFunc(t, elm.initialRgbColor[2], changeInRgbColor[2], duration * 1000));
+
+        var newRgbColor = [newRed, newGreen, newBlue];
+        elm.style[property] = rgbToHex(newRgbColor);
+
+        elm.currentRgbColor = newRgbColor;
+      }
+    }
+    else{
+      action.completed = true;
+      for (elm of self.elements) {
+        elm.style[property] = value;
+        elm.initialRgbColor = elm.currentRgbColor = hexToRgb(value);
+      }
+    }
+
+    return this;
+  }
+
   function getElements(selector){
 
     if(isEmpty(selector)){
@@ -383,6 +423,43 @@ window.$ = window.joon = (function(){
         return out;
     }
     return obj;
+  }
+
+
+
+  function formatHex(hexInt) {
+    var hex = hexInt.toString(16);
+    while (hex.length < 6) { hex = '0' + hex; }
+    return "#" + hex.split(".")[0];
+  }
+
+  function extractRgb(rgb){
+    rgb = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+))?\)$/);
+    return [parseInt(rgb[1]), parseInt(rgb[2]), parseInt(rgb[3])];
+  }
+
+  function calcRgbDistance(from, to){
+    return [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+  }
+
+  function rgbToHex(rgb) {
+    function hex(x) {
+        return ("0" + parseInt(x).toString(16)).slice(-2);
+    }
+    return "#" + hex(rgb[0]) + hex(rgb[1]) + hex(rgb[2]);
+  }
+
+  function hexToRgb(hex) {
+      var result = /^#?([a-f\d]{1,2})([a-f\d]{1,2})([a-f\d]{1,2})$/i.exec(hex);
+
+      if(result){
+        result[1] = result[1].length == 1 ? result[1] + result[1] : result[1];
+        result[2] = result[2].length == 1 ? result[2] + result[2] : result[2];
+        result[3] = result[3].length == 1 ? result[3] + result[3] : result[3];
+        return [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)];
+      }
+
+      return null;
   }
 
   return function(selector){
