@@ -128,6 +128,11 @@ window.$ = window.joon = (function(){
     return self;
   }
 
+  joon.prototype.then = function(func){
+    this.callback = func;
+  }
+
+
   joon.prototype.run = function(){
     var self = this;
     self.actions.forEach(a => a.startTime = Date.now() + a.start * 1000);
@@ -139,6 +144,7 @@ window.$ = window.joon = (function(){
     var actionsToRun = self.actions.filter(a => !a.completed);
 
     if(actionsToRun.length <= 0){
+      if(self.callback) self.callback(self.elements);
       return;
     }
 
@@ -178,7 +184,8 @@ window.$ = window.joon = (function(){
       for (elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
-
+        elm.finalX = elm.initialX + changeInX;
+        elm.finalY = elm.initialY + changeInY;
         var newX = changeInX != 0 ? tweenFunc(t, elm.initialX, changeInX, duration * 1000) : elm.initialX;
         var newY = changeInY != 0 ? tweenFunc(t, elm.initialY, changeInY, duration * 1000) : elm.initialY;
 
@@ -191,10 +198,27 @@ window.$ = window.joon = (function(){
     else{
       action.completed = true;
       for (elm of self.elements) {
-        elm.style.top = elm.initialX = elm.currentX = x;
-        elm.style.left = elm.initialY = elm.currentY = y;
+        elm.style.top = elm.initialX = elm.currentX = elm.finalX;
+        elm.style.left = elm.initialY = elm.currentY = elm.finalY;
       }
     }
+
+    return self;
+  }
+
+  joon.prototype.addContent = function(action, startTime, duration,[content]){
+    var self = this;
+    var t = Date.now() - startTime;
+
+    if(t < 0 || action.completed){
+      return self;
+    }
+
+    for (elm of self.elements) {
+      elm.innerText = elm.innerText + content;
+      action.completed = true;
+    }
+
 
     return self;
   }
