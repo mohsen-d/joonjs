@@ -172,7 +172,7 @@ window.$ = window.joon = (function(){
     return self;
   }
 
-  joon.prototype.moveTo = function(action, startTime, duration, [x, y, tweenFunc]){
+  joon.prototype.moveTo = function(action, startTime, duration, [x, y, tweenFunc, callback]){
     var self = this;
     var t = Date.now() - startTime;
 
@@ -201,12 +201,13 @@ window.$ = window.joon = (function(){
         elm.style.top = elm.initialX = elm.currentX = elm.finalX;
         elm.style.left = elm.initialY = elm.currentY = elm.finalY;
       }
+      if(callback) callback(self.elements);
     }
 
     return self;
   }
 
-  joon.prototype.addContent = function(action, startTime, duration,[content]){
+  joon.prototype.addContent = function(action, startTime, duration,[content, callback]){
     var self = this;
     var t = Date.now() - startTime;
 
@@ -217,13 +218,13 @@ window.$ = window.joon = (function(){
     for (elm of self.elements) {
       elm.innerText = elm.innerText + content;
       action.completed = true;
+      if(callback) callback(self.elements);
     }
-
 
     return self;
   }
 
-  joon.prototype.fadeTo = function(action, startTime, duration, [fadeLevel, tweenFunc]){
+  joon.prototype.fadeTo = function(action, startTime, duration, [fadeLevel, tweenFunc, callback]){
     var self = this;
     var t = Date.now() - startTime;
 
@@ -244,12 +245,13 @@ window.$ = window.joon = (function(){
       for (elm of self.elements) {
         elm.style.opacity = elm.initialOpacity = elm.currentOpacity = fadeLevel;
       }
+      if(callback) callback(self.elements);
     }
 
     return this;
   }
 
-  joon.prototype.scaleTo = function(action, startTime, duration, [x, y, tweenFunc]){
+  joon.prototype.scaleTo = function(action, startTime, duration, [x, y, tweenFunc, callback]){
     var self = this;
     var t = Date.now() - startTime;
     if(t < 0){
@@ -277,12 +279,13 @@ window.$ = window.joon = (function(){
         elm.initialScaleY = elm.currentScaleY = y;
         setTransformFunc(elm, "scale", "scale(" + y + ", " + x + ")");
       }
+      if(callback) callback(self.elements);
     }
 
     return self;
   }
 
-  joon.prototype.rotate = function(action, startTime, duration, [degree, tweenFunc]){
+  joon.prototype.rotate = function(action, startTime, duration, [degree, tweenFunc, callback]){
     var self = this;
     var t = Date.now() - startTime;
 
@@ -307,12 +310,13 @@ window.$ = window.joon = (function(){
         elm.initialRotateDegree = elm.currentRotateDegree = degree;
         setTransformFunc(elm, "rotate", "rotate(" + degree + "deg)");
       }
+      if(callback) callback(self.elements);
     }
 
     return self;
   }
 
-  joon.prototype.skew = function(action, startTime, duration, [x, y, tweenFunc]){
+  joon.prototype.skew = function(action, startTime, duration, [x, y, tweenFunc, callback]){
     var self = this;
     var t = Date.now() - startTime;
 
@@ -341,12 +345,13 @@ window.$ = window.joon = (function(){
         elm.initialSkewY = elm.currentSkewY = y;
         setTransformFunc(elm, "skew", "skew(" + y + "deg, " + x + "deg)");
       }
+      if(callback) callback(self.elements);
     }
 
     return self;
   }
 
-  joon.prototype.changeColor = function(action, startTime, duration, [property, value, tweenFunc]){
+  joon.prototype.changeColor = function(action, startTime, duration, [property, value, tweenFunc, callback]){
     var self = this;
     var t = Date.now() - startTime;
 
@@ -381,6 +386,7 @@ window.$ = window.joon = (function(){
         elm.style[property] = value;
         elm.initialRgbColor = elm.currentRgbColor = hexToRgb(value);
       }
+      if(callback) callback(self.elements);
     }
 
     return this;
