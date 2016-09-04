@@ -1,4 +1,5 @@
 window.$ = window.joon = (function(){
+  'use strict'
 
   function joon(selector) {
     var self = this;
@@ -53,10 +54,9 @@ window.$ = window.joon = (function(){
 
   joon.prototype._init = function(){
     var self = this;
-
     if(self.isTemplate) return self;
 
-    for(elm of self.elements){
+    for(var elm of self.elements){
       for(var func in self.initFunctions)
       {
         self.initFunctions[func](elm);
@@ -67,22 +67,16 @@ window.$ = window.joon = (function(){
 
   joon.prototype.on = function(selector, eventName){
     var self = this;
-    var triggerElements = selector == "document" ? [document] : getElements(selector);
 
-    if(triggerElements.length > 0){
-      for (elm of triggerElements) {
-        if (elm.addEventListener){
-             elm.addEventListener(eventName, function(){
+    document.addEventListener(eventName, function(e) {
+        var target = e.target;
+        while (target && target !== this) {
+            if (target.matches(selector)) {
                 self.run();
-             }, false);
-          }
-          else {
-            elm.attachEvent('on' + eventName, function(){
-                self.run();
-            });
-          }
-      }
-    }
+            }
+            target = target.parentNode;
+        }
+    }, false);
 
     return self;
   }
@@ -121,7 +115,7 @@ window.$ = window.joon = (function(){
     var self = this;
     if(joon.templates[templateName]){
       var templateActions = joon.templates[templateName];
-      for (action of templateActions) {
+      for(var action of templateActions) {
         self.actions.push({name: action.name, completed: false, args: action.args, start: start + action.start, duration: action.duration});
       }
     }
@@ -135,6 +129,7 @@ window.$ = window.joon = (function(){
 
   joon.prototype.run = function(){
     var self = this;
+    self.actions.forEach(a => a.completed = false);
     self.actions.forEach(a => a.startTime = Date.now() + a.start * 1000);
     self.runActions();
   }
@@ -148,7 +143,7 @@ window.$ = window.joon = (function(){
       return;
     }
 
-    for (action of actionsToRun) {
+    for(var action of actionsToRun) {
         self[action.name](action, action.startTime, action.duration, action.args);
     }
 
@@ -161,8 +156,8 @@ window.$ = window.joon = (function(){
     self.animationLength = calcAnimationLength(self.actions);
     var mainActions = deepCopy(self.actions);
     if(laps > 0){
-      for (var i = 1; i <= laps; i++) {
-        for(action of mainActions){
+      for(var i = 1; i <= laps; i++) {
+        for(var action of mainActions){
           self.actions.push({name: action.name, completed: false, args: action.args, start: action.start + self.animationLength, duration: action.duration});
         }
         self.animationLength = calcAnimationLength(self.actions);
@@ -181,7 +176,7 @@ window.$ = window.joon = (function(){
     }
 
     if (t <= duration*1000) {
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
         elm.finalX = elm.initialX + changeInX;
@@ -197,7 +192,7 @@ window.$ = window.joon = (function(){
     }
     else{
       action.completed = true;
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         elm.style.top = elm.initialX = elm.currentX = elm.finalX;
         elm.style.left = elm.initialY = elm.currentY = elm.finalY;
       }
@@ -215,7 +210,7 @@ window.$ = window.joon = (function(){
       return self;
     }
 
-    for (elm of self.elements) {
+    for(var elm of self.elements) {
       elm.innerText = elm.innerText + content;
       action.completed = true;
       if(callback) callback(self.elements);
@@ -233,7 +228,7 @@ window.$ = window.joon = (function(){
     }
 
     if (t <= duration*1000) {
-      for (elm of this.elements) {
+      for(var elm of this.elements) {
         var changeInOpacity =  fadeLevel - elm.initialOpacity;
         var newOpacity = tweenFunc(t, elm.initialOpacity, changeInOpacity, duration * 1000);
         elm.style.opacity = newOpacity;
@@ -242,7 +237,7 @@ window.$ = window.joon = (function(){
     }
     else{
       action.completed = true;
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         elm.style.opacity = elm.initialOpacity = elm.currentOpacity = fadeLevel;
       }
       if(callback) callback(self.elements);
@@ -259,7 +254,7 @@ window.$ = window.joon = (function(){
     }
 
     if (t <= duration*1000) {
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialScaleX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialScaleY;
 
@@ -274,7 +269,7 @@ window.$ = window.joon = (function(){
     }
     else{
       action.completed = true;
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         elm.initialScaleX = elm.currentScaleX = x;
         elm.initialScaleY = elm.currentScaleY = y;
         setTransformFunc(elm, "scale", "scale(" + y + ", " + x + ")");
@@ -294,7 +289,7 @@ window.$ = window.joon = (function(){
     }
 
     if (t <= duration * 1000) {
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         var changeInRotateDegree = typeof degree == "string" ? parseFloat(degree) : degree - elm.initialRotateDegree;
 
         var newRotateDegree = changeInRotateDegree != 0 ? tweenFunc(t, elm.initialRotateDegree, changeInRotateDegree, duration * 1000) : elm.initialRotateDegree;
@@ -306,7 +301,7 @@ window.$ = window.joon = (function(){
     }
     else{
       action.completed = true;
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         elm.initialRotateDegree = elm.currentRotateDegree = degree;
         setTransformFunc(elm, "rotate", "rotate(" + degree + "deg)");
       }
@@ -325,7 +320,7 @@ window.$ = window.joon = (function(){
     }
 
     if (t <= duration*1000) {
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialSkewX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialSkewY;
 
@@ -340,7 +335,7 @@ window.$ = window.joon = (function(){
     }
     else{
       action.completed = true;
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         elm.initialSkewX = elm.currentSkewX = x;
         elm.initialSkewY = elm.currentSkewY = y;
         setTransformFunc(elm, "skew", "skew(" + y + "deg, " + x + "deg)");
@@ -360,7 +355,7 @@ window.$ = window.joon = (function(){
     }
 
     if (t <= duration*1000) {
-      for (elm of this.elements) {
+      for(var elm of this.elements) {
         if(!elm.initialRgbColor)
         {
           elm.initialRgbColor = extractRgb(window.getComputedStyle(elm, null).getPropertyValue(property));
@@ -382,7 +377,7 @@ window.$ = window.joon = (function(){
     }
     else{
       action.completed = true;
-      for (elm of self.elements) {
+      for(var elm of self.elements) {
         elm.style[property] = value;
         elm.initialRgbColor = elm.currentRgbColor = hexToRgb(value);
       }
@@ -440,14 +435,14 @@ window.$ = window.joon = (function(){
   function deepCopy(obj) {
     if (Object.prototype.toString.call(obj) === '[object Array]') {
         var out = [], i = 0, len = obj.length;
-        for ( ; i < len; i++ ) {
+        for( ; i < len; i++ ) {
             out[i] = arguments.callee(obj[i]);
         }
         return out;
     }
     if (typeof obj === 'object') {
         var out = {}, i;
-        for ( i in obj ) {
+        for( i in obj ) {
             out[i] = arguments.callee(obj[i]);
         }
         return out;
