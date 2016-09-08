@@ -94,7 +94,15 @@ window.$ = window.joon = (function(){
   joon.prototype._atAction = function([start, duration, func, ...funcArgs]){
     var self = this;
 
-    var action = {name: func, completed: false, args: funcArgs, start: start, duration: duration};
+    var action = {
+      name: func,
+      completed: false,
+      args: getRandomParameters(funcArgs),
+      start: getRandomNumericParameter(start, true),
+      duration: getRandomNumericParameter(duration, true)
+    };
+
+    console.log(action);
 
     if(self.isTemplate){
       if(joon.templates[self.templateName]){
@@ -116,7 +124,12 @@ window.$ = window.joon = (function(){
     if(joon.templates[templateName]){
       var templateActions = joon.templates[templateName];
       for(var action of templateActions) {
-        self.actions.push({name: action.name, completed: false, args: action.args, start: start + action.start, duration: action.duration});
+        self.actions.push({
+          name: action.name,
+          completed: false,
+          args: action.args,
+          start: getRandomNumericParameter(start, true) + action.start,
+          duration: action.duration});
       }
     }
     return self;
@@ -125,7 +138,6 @@ window.$ = window.joon = (function(){
   joon.prototype.then = function(func){
     this.callback = func;
   }
-
 
   joon.prototype.run = function(){
     var self = this;
@@ -158,7 +170,12 @@ window.$ = window.joon = (function(){
     if(laps > 0){
       for(var i = 1; i <= laps; i++) {
         for(var action of mainActions){
-          self.actions.push({name: action.name, completed: false, args: action.args, start: action.start + self.animationLength, duration: action.duration});
+          self.actions.push({
+            name: action.name,
+            completed: false,
+            args: action.args,
+            start: action.start + self.animationLength,
+            duration: action.duration});
         }
         self.animationLength = calcAnimationLength(self.actions);
       };
@@ -401,11 +418,63 @@ window.$ = window.joon = (function(){
   }
 
   function calcAnimationLength(actions){
-    sortedActions = actions.slice().sort(function(a, b) {
+    var sortedActions = actions.slice().sort(function(a, b) {
 		    return (b.start + b.duration) - (a.start + a.duration);
 		});
 
     return (sortedActions[0].start + sortedActions[0].duration);
+  }
+
+  function getRandomParameters(funcParameters){
+    if(!funcParameters || funcParameters.length == 0){
+      return undefined;
+    }
+
+    var choosenParameters = [];
+
+    for (var i = 0; i <= funcParameters.length - 1; i++) {
+      var param = funcParameters[i];
+
+      if(typeof param == "string" || typeof param == "number" || typeof param == "function")
+        choosenParameters[i] = param;
+
+      if(typeof param[0] == "string")
+        choosenParameters[i] = getRandomStringParameter(param);
+
+      if(typeof param[0] == "number")
+        choosenParameters[i] = getRandomNumericParameter(param, true);
+    }
+
+    return choosenParameters;
+  }
+
+  function getRandomStringParameter(availParameters){
+    if(typeof availParameters == "string") return availParameters;
+
+    var randomIndex = getRandomInteger(0, availParameters.length - 1);
+
+    return availParameters[randomIndex];
+  }
+
+  function getRandomNumericParameter(parameterRange, float){
+    if(typeof parameterRange == "number") return parameterRange;
+
+    if(parameterRange.length != 2){
+      return 0;
+    }
+
+    if(float) return getRandomNumber(parameterRange[0], parameterRange[1]);
+
+    return getRandomInteger(parameterRange[0], parameterRange[1]);
+  }
+
+  function getRandomInteger(min, max) {
+      return Math.floor(getRandomNumber(min, max));
+  }
+
+  function getRandomNumber(min, max) {
+      var rnd = (Math.random() * ((max - 1) - min + 1) + min).toFixed(2);
+      return parseFloat(rnd);
   }
 
   function setTransformFunc(elm, funcName, newValue){
@@ -431,26 +500,6 @@ window.$ = window.joon = (function(){
       return undefined;
     }
   }
-
-  function deepCopy(obj) {
-    if (Object.prototype.toString.call(obj) === '[object Array]') {
-        var out = [], i = 0, len = obj.length;
-        for( ; i < len; i++ ) {
-            out[i] = arguments.callee(obj[i]);
-        }
-        return out;
-    }
-    if (typeof obj === 'object') {
-        var out = {}, i;
-        for( i in obj ) {
-            out[i] = arguments.callee(obj[i]);
-        }
-        return out;
-    }
-    return obj;
-  }
-
-
 
   function formatHex(hexInt) {
     var hex = hexInt.toString(16);
@@ -492,3 +541,21 @@ window.$ = window.joon = (function(){
   };
 
 })();
+
+function deepCopy(obj) {
+  if (Object.prototype.toString.call(obj) === '[object Array]') {
+      var out = [], i = 0, len = obj.length;
+      for( ; i < len; i++ ) {
+          out[i] = arguments.callee(obj[i]);
+      }
+      return out;
+  }
+  if (typeof obj === 'object') {
+      var out = {}, i;
+      for( i in obj ) {
+          out[i] = arguments.callee(obj[i]);
+      }
+      return out;
+  }
+  return obj;
+}
