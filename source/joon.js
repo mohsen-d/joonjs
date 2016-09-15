@@ -7,11 +7,13 @@ window.$ = window.joon = (function(){
     if(selector.startsWith("@")){
       self.templateName = selector.substring(1);
       self.isTemplate = true;
-    }else{
+    }
+    else{
       self.selector = selector;
       self.elements = getElements(selector);
       self.animationLength = 0;
       self.totalLaps = 0;
+      self.completedLaps = 0;
     }
 
     self.actions = [];
@@ -102,8 +104,6 @@ window.$ = window.joon = (function(){
       duration: getRandomNumericParameter(duration, true)
     };
 
-    console.log(action);
-
     if(self.isTemplate){
       if(joon.templates[self.templateName]){
         joon.templates[self.templateName].push(action);
@@ -148,51 +148,49 @@ window.$ = window.joon = (function(){
 
   joon.prototype.runActions = function(){
     var self = this;
+
     var actionsToRun = self.actions.filter(a => !a.completed);
 
-    if(actionsToRun.length <= 0){
-      if(self.callback) self.callback(self.elements);
-      return;
-    }
+    if(actionsToRun.length == 0){
 
-    for(var action of actionsToRun) {
-        self[action.name](action, action.startTime, action.duration, action.args);
-    }
+      self.completedLaps += 1;
 
-    requestAnimationFrame(self.runActions.bind(self));
+      if(self.callback){
+        self.callback(self.elements);
+      }
+
+      if(self.totalLaps == "infinite" || self.totalLaps > self.completedLaps)
+      {
+        self.run();
+      }
+    }
+    else{
+      for(var action of actionsToRun) {
+          self[action.name](action, action.startTime, action.duration, action.args);
+      }
+
+      requestAnimationFrame(self.runActions.bind(self));
+    }
   }
 
   joon.prototype.loop = function(laps){
     var self = this;
 
-    self.animationLength = calcAnimationLength(self.actions);
-    var mainActions = deepCopy(self.actions);
-    if(laps > 0){
-      for(var i = 1; i <= laps; i++) {
-        for(var action of mainActions){
-          self.actions.push({
-            name: action.name,
-            completed: false,
-            args: action.args,
-            start: action.start + self.animationLength,
-            duration: action.duration});
-        }
-        self.animationLength = calcAnimationLength(self.actions);
-      };
-    }
+    self.totalLaps = laps;
 
     return self;
   }
 
   joon.prototype.moveTo = function(action, startTime, duration, [x, y, tweenFunc, callback]){
     var self = this;
+
     var t = Date.now() - startTime;
 
     if(t < 0){
       return this;
     }
 
-    if (t <= duration*1000) {
+    if (t < duration * 1000) {
       for(var elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
@@ -244,7 +242,7 @@ window.$ = window.joon = (function(){
       return this;
     }
 
-    if (t <= duration*1000) {
+    if (t < duration * 1000) {
       for(var elm of this.elements) {
         var changeInOpacity =  fadeLevel - elm.initialOpacity;
         var newOpacity = tweenFunc(t, elm.initialOpacity, changeInOpacity, duration * 1000);
@@ -270,7 +268,7 @@ window.$ = window.joon = (function(){
       return this;
     }
 
-    if (t <= duration*1000) {
+    if (t < duration * 1000) {
       for(var elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialScaleX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialScaleY;
@@ -305,7 +303,7 @@ window.$ = window.joon = (function(){
       return this;
     }
 
-    if (t <= duration * 1000) {
+    if (t < duration * 1000) {
       for(var elm of self.elements) {
         var changeInRotateDegree = typeof degree == "string" ? parseFloat(degree) : degree - elm.initialRotateDegree;
 
@@ -336,7 +334,7 @@ window.$ = window.joon = (function(){
       return this;
     }
 
-    if (t <= duration*1000) {
+    if (t < duration * 1000) {
       for(var elm of self.elements) {
         var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialSkewX;
         var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialSkewY;
@@ -371,7 +369,7 @@ window.$ = window.joon = (function(){
       return this;
     }
 
-    if (t <= duration*1000) {
+    if (t < duration * 1000) {
       for(var elm of this.elements) {
         if(!elm.initialRgbColor)
         {
@@ -492,7 +490,7 @@ window.$ = window.joon = (function(){
   function getTransformFunc(elm, funcName){
     var checkRegex = new RegExp(funcName, "i");
     var matchRegex = new RegExp(funcName + "\\((.*?)(?:(?:\\,)(.*?))?\\)", "i");
-    var style = funcName == "moveTo"
+
     if(checkRegex.test(elm.style.transform)){
       return elm.style.transform.match(matchRegex);
     }
@@ -541,21 +539,3 @@ window.$ = window.joon = (function(){
   };
 
 })();
-
-function deepCopy(obj) {
-  if (Object.prototype.toString.call(obj) === '[object Array]') {
-      var out = [], i = 0, len = obj.length;
-      for( ; i < len; i++ ) {
-          out[i] = arguments.callee(obj[i]);
-      }
-      return out;
-  }
-  if (typeof obj === 'object') {
-      var out = {}, i;
-      for( i in obj ) {
-          out[i] = arguments.callee(obj[i]);
-      }
-      return out;
-  }
-  return obj;
-}
