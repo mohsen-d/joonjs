@@ -14,6 +14,7 @@ window.$ = window.joon = (function(){
       self.animationLength = 0;
       self.totalLaps = 0;
       self.completedLaps = 0;
+      self.actionIndex = 0;
     }
 
     self.actions = [];
@@ -74,7 +75,8 @@ window.$ = window.joon = (function(){
         var target = e.target;
         while (target && target !== this) {
             if (target.matches(selector)) {
-                self.run();
+              self.completedLaps = 0;
+              self.run();
             }
             target = target.parentNode;
         }
@@ -97,11 +99,12 @@ window.$ = window.joon = (function(){
     var self = this;
 
     var action = {
+      index: self.actionIndex++,
       name: func,
       completed: false,
-      args: getRandomParameters(funcArgs),
-      start: getRandomNumericParameter(start, true),
-      duration: getRandomNumericParameter(duration, true)
+      possibleArgs: funcArgs,
+      possibleStarts: start,
+      possibleDurations: duration
     };
 
     if(self.isTemplate){
@@ -125,11 +128,12 @@ window.$ = window.joon = (function(){
       var templateActions = joon.templates[templateName];
       for(var action of templateActions) {
         self.actions.push({
+          index: action.index,
           name: action.name,
           completed: false,
-          args: action.args,
-          start: getRandomNumericParameter(start, true) + action.start,
-          duration: action.duration});
+          possibleArgs: action.possibleArgs,
+          possibleStarts: RangeSum(action.possibleStarts, start),
+          possibleDurations: action.possibleDurations});
       }
     }
     return self;
@@ -141,8 +145,18 @@ window.$ = window.joon = (function(){
 
   joon.prototype.run = function(){
     var self = this;
-    self.actions.forEach(a => a.completed = false);
-    self.actions.forEach(a => a.startTime = Date.now() + a.start * 1000);
+    for(var action of self.actions){
+      action.completed = false;
+      for(var elm of self.elements){
+        if(!elm.actionsParameters) elm.actionsParameters = [];
+        elm.actionsParameters[action.index] = {
+          completed: false,
+          args: getRandomParameters(action.possibleArgs),
+          duration: getRandomNumericParameter(action.possibleDurations, true),
+          startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
+        };
+      }
+    }
     self.runActions();
   }
 
@@ -166,7 +180,9 @@ window.$ = window.joon = (function(){
     }
     else{
       for(var action of actionsToRun) {
-          self[action.name](action, action.startTime, action.duration, action.args);
+        for(var elm of self.elements){
+          self[action.name](action, elm, elm.actionsParameters[action.index].startTime, elm.actionsParameters[action.index].duration, elm.actionsParameters[action.index].args);
+        }
       }
 
       requestAnimationFrame(self.runActions.bind(self));
@@ -181,196 +197,182 @@ window.$ = window.joon = (function(){
     return self;
   }
 
-  joon.prototype.moveTo = function(action, startTime, duration, [x, y, tweenFunc, callback]){
+  joon.prototype.moveTo = function(action, elm, startTime, duration, [x, y, tweenFunc]){
     var self = this;
 
     var t = Date.now() - startTime;
 
     if(t < 0){
-      return this;
+      return;
     }
 
     if (t < duration * 1000) {
-      for(var elm of self.elements) {
-        var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
-        var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
-        elm.finalX = elm.initialX + changeInX;
-        elm.finalY = elm.initialY + changeInY;
-        var newX = changeInX != 0 ? tweenFunc(t, elm.initialX, changeInX, duration * 1000) : elm.initialX;
-        var newY = changeInY != 0 ? tweenFunc(t, elm.initialY, changeInY, duration * 1000) : elm.initialY;
+      var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
+      var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
+      elm.finalX = elm.initialX + changeInX;
+      elm.finalY = elm.initialY + changeInY;
+      var newX = changeInX != 0 ? tweenFunc(t, elm.initialX, changeInX, duration * 1000) : elm.initialX;
+      var newY = changeInY != 0 ? tweenFunc(t, elm.initialY, changeInY, duration * 1000) : elm.initialY;
 
-        elm.style.top = newX;
-        elm.style.left = newY;
-        elm.currentX = newX;
-        elm.currentY = newY;
-      }
+      elm.style.top = newX;
+      elm.style.left = newY;
+      elm.currentX = newX;
+      elm.currentY = newY;
     }
     else{
-      action.completed = true;
-      for(var elm of self.elements) {
-        elm.style.top = elm.initialX = elm.currentX = elm.finalX;
-        elm.style.left = elm.initialY = elm.currentY = elm.finalY;
-      }
-      if(callback) callback(self.elements);
-    }
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
 
-    return self;
+      elm.style.top = elm.initialX = elm.currentX = elm.finalX;
+      elm.style.left = elm.initialY = elm.currentY = elm.finalY;
+    }
   }
 
-  joon.prototype.addContent = function(action, startTime, duration,[content, callback]){
+  joon.prototype.addContent = function(action, elm, startTime, duration,[content]){
     var self = this;
+
     var t = Date.now() - startTime;
 
     if(t < 0 || action.completed){
-      return self;
+      return;
     }
 
-    for(var elm of self.elements) {
-      elm.innerText = elm.innerText + content;
-      action.completed = true;
-      if(callback) callback(self.elements);
-    }
-
-    return self;
+    elm.innerText = elm.innerText + content;
+    elm.actionsParameters[action.index].completed = true;
+    self._updateActionStatus(action);
   }
 
-  joon.prototype.fadeTo = function(action, startTime, duration, [fadeLevel, tweenFunc, callback]){
+  joon.prototype.fadeTo = function(action, elm, startTime, duration, [fadeLevel, tweenFunc]){
     var self = this;
     var t = Date.now() - startTime;
 
     if(t < 0){
-      return this;
+      return;
     }
 
     if (t < duration * 1000) {
-      for(var elm of this.elements) {
-        var changeInOpacity =  fadeLevel - elm.initialOpacity;
-        var newOpacity = tweenFunc(t, elm.initialOpacity, changeInOpacity, duration * 1000);
-        elm.style.opacity = newOpacity;
-        elm.currentOpacity = newOpacity;
-      }
+      var changeInOpacity =  fadeLevel - elm.initialOpacity;
+      var newOpacity = tweenFunc(t, elm.initialOpacity, changeInOpacity, duration * 1000);
+      elm.style.opacity = newOpacity;
+      elm.currentOpacity = newOpacity;
     }
     else{
-      action.completed = true;
-      for(var elm of self.elements) {
-        elm.style.opacity = elm.initialOpacity = elm.currentOpacity = fadeLevel;
-      }
-      if(callback) callback(self.elements);
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
+      elm.style.opacity = elm.initialOpacity = elm.currentOpacity = fadeLevel;
     }
-
-    return this;
   }
 
-  joon.prototype.scaleTo = function(action, startTime, duration, [x, y, tweenFunc, callback]){
+  joon.prototype.scaleTo = function(action, elm, startTime, duration, [x, y, tweenFunc]){
     var self = this;
+
     var t = Date.now() - startTime;
+
     if(t < 0){
-      return this;
+      return;
     }
 
     if (t < duration * 1000) {
-      for(var elm of self.elements) {
-        var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialScaleX;
-        var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialScaleY;
+      var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialScaleX;
+      var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialScaleY;
 
-        var newX = changeInX != 0 ? tweenFunc(t, elm.initialScaleX, changeInX, duration * 1000) : elm.initialScaleX;
-        var newY = changeInY != 0 ? tweenFunc(t, elm.initialScaleY, changeInY, duration * 1000) : elm.initialScaleY;
+      var newX = changeInX != 0 ? tweenFunc(t, elm.initialScaleX, changeInX, duration * 1000) : elm.initialScaleX;
+      var newY = changeInY != 0 ? tweenFunc(t, elm.initialScaleY, changeInY, duration * 1000) : elm.initialScaleY;
 
-        var scale = "scale(" + newY + ", " + newX + ")";
-        setTransformFunc(elm, "scale", scale);
-        elm.currentScaleX = newX;
-        elm.currentScaleY = newY;
-      }
+      var scale = "scale(" + newY + ", " + newX + ")";
+      setTransformFunc(elm, "scale", scale);
+      elm.currentScaleX = newX;
+      elm.currentScaleY = newY;
     }
     else{
-      action.completed = true;
-      for(var elm of self.elements) {
-        elm.initialScaleX = elm.currentScaleX = x;
-        elm.initialScaleY = elm.currentScaleY = y;
-        setTransformFunc(elm, "scale", "scale(" + y + ", " + x + ")");
-      }
-      if(callback) callback(self.elements);
-    }
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
 
-    return self;
+      elm.initialScaleX = elm.currentScaleX = x;
+      elm.initialScaleY = elm.currentScaleY = y;
+      setTransformFunc(elm, "scale", "scale(" + y + ", " + x + ")");
+    }
   }
 
-  joon.prototype.rotate = function(action, startTime, duration, [degree, tweenFunc, callback]){
+  joon.prototype.rotate = function(action, elm, startTime, duration, [degree, tweenFunc]){
     var self = this;
+
     var t = Date.now() - startTime;
 
     if(t < 0){
-      return this;
+      return;
     }
 
     if (t < duration * 1000) {
-      for(var elm of self.elements) {
-        var changeInRotateDegree = typeof degree == "string" ? parseFloat(degree) : degree - elm.initialRotateDegree;
+      var changeInRotateDegree = typeof degree == "string" ? parseFloat(degree) : degree - elm.initialRotateDegree;
 
-        var newRotateDegree = changeInRotateDegree != 0 ? tweenFunc(t, elm.initialRotateDegree, changeInRotateDegree, duration * 1000) : elm.initialRotateDegree;
+      var newRotateDegree = changeInRotateDegree != 0 ? tweenFunc(t, elm.initialRotateDegree, changeInRotateDegree, duration * 1000) : elm.initialRotateDegree;
 
-        var rotate = "rotate(" + newRotateDegree + "deg)";
-        setTransformFunc(elm, "rotate", rotate);
-        elm.currentRotateDegree = newRotateDegree;
-      }
+      var rotate = "rotate(" + newRotateDegree + "deg)";
+      setTransformFunc(elm, "rotate", rotate);
+      elm.currentRotateDegree = newRotateDegree;
     }
     else{
-      action.completed = true;
-      for(var elm of self.elements) {
-        elm.initialRotateDegree = elm.currentRotateDegree = degree;
-        setTransformFunc(elm, "rotate", "rotate(" + degree + "deg)");
-      }
-      if(callback) callback(self.elements);
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
+      elm.initialRotateDegree = elm.currentRotateDegree = degree;
+      setTransformFunc(elm, "rotate", "rotate(" + degree + "deg)");
     }
-
-    return self;
   }
 
-  joon.prototype.skew = function(action, startTime, duration, [x, y, tweenFunc, callback]){
+  joon.prototype.skew = function(action, elm, startTime, duration, [x, y, tweenFunc]){
     var self = this;
+
     var t = Date.now() - startTime;
 
     if(t < 0){
-      return this;
+      return;
     }
 
     if (t < duration * 1000) {
-      for(var elm of self.elements) {
-        var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialSkewX;
-        var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialSkewY;
+      var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialSkewX;
+      var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialSkewY;
 
-        var newX = changeInX != 0 ? tweenFunc(t, elm.initialSkewX, changeInX, duration * 1000) : elm.initialSkewX;
-        var newY = changeInY != 0 ? tweenFunc(t, elm.initialSkewY, changeInY, duration * 1000) : elm.initialSkewY;
+      var newX = changeInX != 0 ? tweenFunc(t, elm.initialSkewX, changeInX, duration * 1000) : elm.initialSkewX;
+      var newY = changeInY != 0 ? tweenFunc(t, elm.initialSkewY, changeInY, duration * 1000) : elm.initialSkewY;
 
-        var skew = "skew(" + newY + "deg, " + newX + "deg)";
-        setTransformFunc(elm, "skew", skew);
-        elm.currentSkewX = newX;
-        elm.currentSkewY = newY;
-      }
+      var skew = "skew(" + newY + "deg, " + newX + "deg)";
+      setTransformFunc(elm, "skew", skew);
+      elm.currentSkewX = newX;
+      elm.currentSkewY = newY;
     }
     else{
-      action.completed = true;
-      for(var elm of self.elements) {
-        elm.initialSkewX = elm.currentSkewX = x;
-        elm.initialSkewY = elm.currentSkewY = y;
-        setTransformFunc(elm, "skew", "skew(" + y + "deg, " + x + "deg)");
-      }
-      if(callback) callback(self.elements);
-    }
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
 
-    return self;
+      elm.initialSkewX = elm.currentSkewX = x;
+      elm.initialSkewY = elm.currentSkewY = y;
+      setTransformFunc(elm, "skew", "skew(" + y + "deg, " + x + "deg)");
+    }
   }
 
-  joon.prototype.changeColor = function(action, startTime, duration, [property, value, tweenFunc, callback]){
+  joon.prototype._updateActionStatus = function(action){
+    var notCompletedElements = 0;
+
+    for(var elm of this.elements){
+      if(elm.actionsParameters[action.index].completed === false){
+        notCompletedElements += 1;
+      }
+    }
+
+    if(notCompletedElements == 0) action.completed = true;
+  }
+
+  joon.prototype.changeColor = function(action, elm, startTime, duration, [property, value, tweenFunc]){
     var self = this;
+
     var t = Date.now() - startTime;
 
     if(t < 0){
-      return this;
+      return;
     }
 
     if (t < duration * 1000) {
-      for(var elm of this.elements) {
         if(!elm.initialRgbColor)
         {
           elm.initialRgbColor = extractRgb(window.getComputedStyle(elm, null).getPropertyValue(property));
@@ -388,18 +390,14 @@ window.$ = window.joon = (function(){
         elm.style[property] = rgbToHex(newRgbColor);
 
         elm.currentRgbColor = newRgbColor;
-      }
     }
     else{
-      action.completed = true;
-      for(var elm of self.elements) {
-        elm.style[property] = value;
-        elm.initialRgbColor = elm.currentRgbColor = hexToRgb(value);
-      }
-      if(callback) callback(self.elements);
-    }
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
 
-    return this;
+      elm.style[property] = value;
+      elm.initialRgbColor = elm.currentRgbColor = hexToRgb(value);
+    }
   }
 
   function getElements(selector){
@@ -479,11 +477,13 @@ window.$ = window.joon = (function(){
     var checkRegex = new RegExp(funcName, "i");
     var replaceRegex = new RegExp(funcName + "(?:.*?)\\)", "i");
 
-    if(checkRegex.test(elm.style.transform)){
-      elm.style.transform = elm.style.transform.replace(replaceRegex, newValue);
+    var elmCurrentTransform = getBrowserTransform(elm);
+
+    if(checkRegex.test(elmCurrentTransform)){
+      setBrowserTransform(elm, elmCurrentTransform.replace(replaceRegex, newValue));
     }
     else{
-      elm.style.transform += " " + newValue;
+      setBrowserTransform(elm, elmCurrentTransform + " " + newValue);
     }
   }
 
@@ -491,12 +491,58 @@ window.$ = window.joon = (function(){
     var checkRegex = new RegExp(funcName, "i");
     var matchRegex = new RegExp(funcName + "\\((.*?)(?:(?:\\,)(.*?))?\\)", "i");
 
-    if(checkRegex.test(elm.style.transform)){
-      return elm.style.transform.match(matchRegex);
+    var elmTransform = hasBrowserTransform(elm) ? getBrowserTransform(elm) : elm.style.transform;
+
+    if(checkRegex.test(elmTransform)){
+      return elmTransform.match(matchRegex);
     }
     else{
       return undefined;
     }
+  }
+
+  function hasBrowserTransform(elm) {
+    return !isEmpty(elm.style.webkitTransform) ||
+          !isEmpty(elm.style.MozTransform) ||
+          !isEmpty(elm.style.msTransform) ||
+          !isEmpty(elm.style.OpTransform);
+  }
+
+  function getBrowserTransform(elm){
+    if(bowser.chrome || bowser.safari)
+      return elm.style.webkitTransform;
+
+    if(bowser.firefox)
+      return elm.style.MozTransform;
+
+    if(bowser.msie)
+      return elm.style.msTransform;
+
+    if(bowser.opera)
+      return elm.style.OpTransform;
+
+    return elm.style.transform;
+  }
+
+  function setBrowserTransform(elm, value){
+    if(bowser.chrome || bowser.safari)
+      elm.style.webkitTransform = value;
+
+    if(bowser.firefox)
+      elm.style.MozTransform = value;;
+
+    if(bowser.msie)
+      elm.style.msTransform = value;;
+
+    if(bowser.opera)
+      elm.style.OpTransform = value;;
+
+    elm.style.transform = value;;
+  }
+
+  function RangeSum(range, number){
+    if(typeof range == "number") return range + number;
+    else return [range[0] + number, range[1] + number];
   }
 
   function formatHex(hexInt) {
