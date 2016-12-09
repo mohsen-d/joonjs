@@ -1,5 +1,5 @@
 window.$ = window.joon = (function(){
-  'use strict'
+  'use strict';
 
   function joon(selector) {
     var self = this;
@@ -351,18 +351,6 @@ window.$ = window.joon = (function(){
     }
   }
 
-  joon.prototype._updateActionStatus = function(action){
-    var notCompletedElements = 0;
-
-    for(var elm of this.elements){
-      if(elm.actionsParameters[action.index].completed === false){
-        notCompletedElements += 1;
-      }
-    }
-
-    if(notCompletedElements == 0) action.completed = true;
-  }
-
   joon.prototype.changeColor = function(action, elm, startTime, duration, [property, value, tweenFunc]){
     var self = this;
 
@@ -400,6 +388,57 @@ window.$ = window.joon = (function(){
     }
   }
 
+  joon.prototype.change = function(action, elm, startTime, duration, [property, value, tweenFunc]){
+    var self = this;
+
+    var t = Date.now() - startTime;
+
+    if(t < 0){
+      return;
+    }
+
+    var isBorderWidth = property.toLowerCase() == "border-width";
+
+    if (t < duration * 1000) {
+
+      if(!hasInitValue(elm, property))
+      {
+        var initVal = !isBorderWidth ? window.getComputedStyle(elm, null).getPropertyValue(property) : window.getComputedStyle(elm, null).getPropertyValue("border-right-width");
+        elm.initialPropValue[property] = parseFloat(initVal);
+      }
+
+      var changeInValue = value - elm.initialPropValue[property];
+
+      var newValue = changeInValue != 0 ? tweenFunc(t, elm.initialPropValue[property], changeInValue, duration * 1000) : elm.initialPropValue[property];
+
+      if(isBorderWidth) setElmBorderWidth(elm, newValue);
+      else elm.style[property] = newValue;
+
+      elm.currentPropValue[property] = newValue;
+    }
+    else{
+      elm.actionsParameters[action.index].completed = true;
+      self._updateActionStatus(action);
+
+      if(isBorderWidth) setElmBorderWidth(elm, value);
+      else elm.style[property] = value;
+
+      elm.initialPropValue[property] = elm.currentPropValue[property] = value;
+    }
+  }
+
+  joon.prototype._updateActionStatus = function(action){
+    var notCompletedElements = 0;
+
+    for(var elm of this.elements){
+      if(elm.actionsParameters[action.index].completed === false){
+        notCompletedElements += 1;
+      }
+    }
+
+    if(notCompletedElements == 0) action.completed = true;
+  }
+
   function getElements(selector){
 
     if(isEmpty(selector)){
@@ -409,8 +448,23 @@ window.$ = window.joon = (function(){
     return document.querySelectorAll(selector);
   }
 
+  function setElmBorderWidth(elm, value){
+    elm.style["border-right-width"] = value;
+    elm.style["border-left-width"] = value;
+    elm.style["border-top-width"] = value;
+    elm.style["border-bottom-width"] = value;
+  }
+
+  function hasInitValue(elm, prop){
+    if(!elm.initialPropValue){
+      elm.initialPropValue = elm.currentPropValue = [];
+    }
+
+    return !isEmpty(elm.initialPropValue[prop]);
+  }
+
   function isEmpty(val){
-    return val === undefined || val === null || val.trim() === "";
+    return val === undefined || val === null || (typeof val == "string" && val.trim() === "");
   }
 
   function calcAnimationLength(actions){
