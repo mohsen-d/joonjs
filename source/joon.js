@@ -44,8 +44,21 @@ window.$ = window.joon = (function(){
     },
 
     rotate: function(elm){
-      var initialRotateDegree = getTransformFunc(elm, "rotate") || [0, "0deg"];
-      elm.initialRotateDegree =parseFloat(initialRotateDegree[1].replace("deg", ""));
+        var initialRotate = getTransformFunc(elm, "rotate");
+
+        if(initialRotate){
+            elm.initialRotateX = parseFloat(initialRotate[1]);
+            elm.initialRotateY = parseFloat(initialRotate[1]);
+            return;
+        }
+
+         var initialRotateX = getTransformFunc(elm, "rotateX") || [0, "0deg"];
+         var initialRotateY = getTransformFunc(elm, "rotateY") || [0, "0deg"];
+         var initialRotateZ = getTransformFunc(elm, "rotateZ") || [0, "0deg"];
+
+         elm.initialRotateX = parseFloat(initialRotateX[1]);
+         elm.initialRotateY = parseFloat(initialRotateY[1]);
+         elm.initialRotateZ = parseFloat(initialRotateZ[1]);
     },
 
     skew: function(elm){
@@ -294,7 +307,7 @@ window.$ = window.joon = (function(){
     }
   }
 
-  joon.prototype.rotate = function(action, elm, startTime, duration, [degree, tweenFunc]){
+  joon.prototype.rotate = function(action, elm, startTime, duration, [x, y, z, tweenFunc]){
     var self = this;
 
     var t = Date.now() - startTime;
@@ -304,19 +317,28 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-      var changeInRotateDegree = typeof degree == "string" ? parseFloat(degree) : degree - elm.initialRotateDegree;
+      var changeInRotateX = typeof x == "string" ? parseFloat(x) : x - elm.initialRotateX;
+      var changeInRotateY = typeof y == "string" ? parseFloat(y) : y - elm.initialRotateY;
+      var changeInRotateZ = typeof z == "string" ? parseFloat(z) : z - elm.initialRotateZ;
 
-      var newRotateDegree = changeInRotateDegree != 0 ? tweenFunc(t, elm.initialRotateDegree, changeInRotateDegree, duration * 1000) : elm.initialRotateDegree;
+      var newRotateX = changeInRotateX != 0 ? tweenFunc(t, elm.initialRotateX, changeInRotateX, duration * 1000) : elm.initialRotateX;
+      var newRotateY = changeInRotateY != 0 ? tweenFunc(t, elm.initialRotateY, changeInRotateY, duration * 1000) : elm.initialRotateY;
+      var newRotateZ = changeInRotateZ != 0 ? tweenFunc(t, elm.initialRotateZ, changeInRotateZ, duration * 1000) : elm.initialRotateZ;
 
-      var rotate = "rotate(" + newRotateDegree + "deg)";
-      setTransformFunc(elm, "rotate", rotate);
-      elm.currentRotateDegree = newRotateDegree;
+      setTransformFunc(elm, "rotateX", "rotateX(" + newRotateX + "deg)");
+      setTransformFunc(elm, "rotateY", "rotateY(" + newRotateY + "deg)");
+      setTransformFunc(elm, "rotateZ", "rotateZ(" + newRotateZ + "deg)");
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
-      elm.initialRotateDegree = elm.currentRotateDegree = degree;
-      setTransformFunc(elm, "rotate", "rotate(" + degree + "deg)");
+      elm.initialRotateX = x;
+      elm.initialRotateY = y;
+      elm.initialRotateZ = z;
+
+      setTransformFunc(elm, "rotateX", "rotateX(" + x + "deg)");
+      setTransformFunc(elm, "rotateY", "rotateY(" + y + "deg)");
+      setTransformFunc(elm, "rotateZ", "rotateZ(" + z + "deg)");
     }
   }
 
@@ -543,7 +565,7 @@ window.$ = window.joon = (function(){
 
   function getTransformFunc(elm, funcName){
     var checkRegex = new RegExp(funcName, "i");
-    var matchRegex = new RegExp(funcName + "\\((.*?)(?:(?:\\,)(.*?))?\\)", "i");
+    var matchRegex = new RegExp(funcName + "\\((.*?)(?:(?:\\,)(.*?)(?:(?:\\,)(.*?))?)?\\)", "i");
 
     var elmTransform = hasBrowserTransform(elm) ? getBrowserTransform(elm) : elm.style.transform;
 
