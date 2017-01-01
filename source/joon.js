@@ -38,9 +38,31 @@ window.$ = window.joon = (function(){
     },
 
     scaleTo: function(elm){
-      var initialScale = getTransformFunc(elm, "scale") || [0, 1, 1];
-      elm.initialScaleX = parseFloat(initialScale[2]);
-      elm.initialScaleY = parseFloat(initialScale[1]);
+        var initialScale = getTransformFunc(elm, "scale3d");
+
+        if(initialScale){
+            elm.initialScaleX = parseFloat(initialScale[1]);
+            elm.initialScaleY = parseFloat(initialScale[2]);
+            elm.initialScaleZ = parseFloat(initialScale[3]);
+            return;
+        }
+
+        initialScale = getTransformFunc(elm, "scale");
+
+        if(initialScale){
+            elm.initialScaleX = parseFloat(initialScale[1]);
+            elm.initialScaleY = initialScale.length > 2 ? parseFloat(initialScale[2]) : parseFloat(initialScale[1]);
+            elm.initialScaleZ = 1;
+            return;
+        }
+
+         var initialScaleX = getTransformFunc(elm, "scaleX") || [0, "1"];
+         var initialScaleY = getTransformFunc(elm, "scaleY") || [0, "1"];
+         var initialScaleZ = getTransformFunc(elm, "ScaleZ") || [0, "1"];
+
+         elm.initialScaleX = parseFloat(initialScaleX[1]);
+         elm.initialScaleY = parseFloat(initialScaleY[1]);
+         elm.initialScaleZ = parseFloat(initialScaleZ[1]);
     },
 
     rotate: function(elm){
@@ -276,7 +298,7 @@ window.$ = window.joon = (function(){
     }
   }
 
-  joon.prototype.scaleTo = function(action, elm, startTime, duration, [x, y, tweenFunc]){
+  joon.prototype.scaleTo = function(action, elm, startTime, duration, [x, y, z, tweenFunc]){
     var self = this;
 
     var t = Date.now() - startTime;
@@ -288,22 +310,26 @@ window.$ = window.joon = (function(){
     if (t < duration * 1000) {
       var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialScaleX;
       var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialScaleY;
+      var changeInZ = typeof z == "string" ? parseFloat(z) : z - elm.initialScaleZ;
 
       var newX = changeInX != 0 ? tweenFunc(t, elm.initialScaleX, changeInX, duration * 1000) : elm.initialScaleX;
       var newY = changeInY != 0 ? tweenFunc(t, elm.initialScaleY, changeInY, duration * 1000) : elm.initialScaleY;
+      var newZ = changeInZ != 0 ? tweenFunc(t, elm.initialScaleZ, changeInZ, duration * 1000) : elm.initialScaleZ;
 
-      var scale = "scale(" + newY + ", " + newX + ")";
-      setTransformFunc(elm, "scale", scale);
-      elm.currentScaleX = newX;
-      elm.currentScaleY = newY;
+      setTransformFunc(elm, "scaleX", "scaleX(" + newX + ")");
+      setTransformFunc(elm, "scaleY", "scaleY(" + newY + ")");
+      setTransformFunc(elm, "scaleZ", "scaleZ(" + newZ + ")");
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
-      elm.initialScaleX = elm.currentScaleX = x;
-      elm.initialScaleY = elm.currentScaleY = y;
-      setTransformFunc(elm, "scale", "scale(" + y + ", " + x + ")");
+      elm.initialScaleX = x;
+      elm.initialScaleY = y;
+      elm.initialScaleZ = z;
+      setTransformFunc(elm, "scaleX", "scaleX(" + x + ")");
+      setTransformFunc(elm, "scaleY", "scaleY(" + y + ")");
+      setTransformFunc(elm, "scaleZ", "scaleZ(" + z + ")");
     }
   }
 
