@@ -176,6 +176,7 @@ window.$ = window.joon = (function(){
 
   joon.prototype.then = function(func){
     this.callback = func;
+    return this;
   }
 
   joon.prototype.run = function(){
@@ -533,8 +534,11 @@ window.$ = window.joon = (function(){
     for (var i = 0; i <= funcParameters.length - 1; i++) {
       var param = funcParameters[i];
 
-      if(typeof param == "string" || typeof param == "number" || typeof param == "function")
+      if(typeof param == "string" || typeof param == "number")
         choosenParameters[i] = param;
+
+        if(typeof param == "function")
+            choosenParameters[i] = i < funcParameters.length - 1 ? param() : param;
 
       if(typeof param[0] == "string")
         choosenParameters[i] = getRandomStringParameter(param);
