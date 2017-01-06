@@ -23,6 +23,76 @@ window.$ = window.joon = (function(){
 
   joon.templates = {};
 
+  joon.prototype.preRunFunctions = {
+      moveTo: function(elm, [x, y]){
+          elm.changeInX = calcChangeInValue(x, elm.initialX);
+          elm.changeInY = calcChangeInValue(x, elm.initialY);
+
+          elm.finalX = elm.initialX + elm.changeInX;
+          elm.finalY = elm.initialY + elm.changeInY;
+      },
+
+      fadeTo: function(elm, [x]){
+          elm.changeInOpacity =  calcChangeInValue(x, elm.initialOpacity);
+          elm.finalOpacity = elm.initialOpacity + elm.changeInOpacity;
+      },
+
+      rotate: function(elm, [x, y, z]){
+          elm.changeInRotateX = calcChangeInValue(x, elm.initialRotateX);
+          elm.changeInRotateY = calcChangeInValue(y, elm.initialRotateY);
+          elm.changeInRotateZ = calcChangeInValue(z, elm.initialRotateZ);
+
+          elm.finalRotateX = elm.initialRotateX + elm.changeInRotateX;
+          elm.finalRotateY = elm.initialRotateY + elm.changeInRotateY;
+          elm.finalRotateZ = elm.initialRotateZ + elm.changeInRotateZ;
+      },
+
+      skew: function(elm, [x, y]){
+          elm.changeInSkewX = calcChangeInValue(x, elm.initialSkewX);
+          elm.changeInSkewY = calcChangeInValue(y, elm.initialSkewY);
+
+          elm.finalSkewX = elm.initialSkewX + elm.changeInSkewX;
+          elm.finalSkewY = elm.initialSkewY + elm.changeInSkewY;
+      },
+
+      scaleTo: function(elm, [x, y, z]){
+          elm.changeInScaleX = calcChangeInValue(x, elm.initialScaleX);
+          elm.changeInScaleY = calcChangeInValue(y, elm.initialScaleY);
+          elm.changeInScaleZ = calcChangeInValue(z, elm.initialScaleZ);
+
+          elm.finalScaleX = elm.initialScaleX + elm.changeInScaleX;
+          elm.finalScaleY = elm.initialScaleY + elm.changeInScaleY;
+          elm.finalScaleZ = elm.initialScaleZ + elm.changeInScaleZ;
+      },
+
+      changeColor: function(elm, [property, value]){
+          if(!elm.initialRgbColor)
+          {
+            elm.initialRgbColor = extractRgb(window.getComputedStyle(elm, null).getPropertyValue(property));
+          }
+
+          elm.finalRgbColor = hexToRgb(value);
+
+          elm.changeInRgbColor = calcRgbDistance(elm.initialRgbColor, elm.finalRgbColor);
+      },
+
+      change: function(elm, [property, value]){
+          if(!hasInitValue(elm, property))
+          {
+              var isBorderWidth = property.toLowerCase() == "border-width";
+
+                var initVal = !isBorderWidth ?
+                                window.getComputedStyle(elm, null).getPropertyValue(property) :
+                                window.getComputedStyle(elm, null).getPropertyValue("border-right-width");
+
+                elm.initialPropValue[property] = parseFloat(initVal);
+          }
+
+          elm.changeInPropValue[property] = value - elm.initialPropValue[property];
+          elm.finalPropValue[property] = elm.initialPropValue[property] + elm.changeInPropValue[property];
+      }
+  }
+
   joon.prototype.initFunctions = {
     moveTo: function(elm){
       var initialTranslate = getTransformFunc(elm, "translate") || [0, 0, 0];
@@ -191,6 +261,7 @@ window.$ = window.joon = (function(){
           duration: getRandomNumericParameter(action.possibleDurations, true),
           startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
         };
+        self.preRunFunctions[action.name](elm, elm.actionsParameters[action.index].args);
       }
     }
     self.runActions();
@@ -243,24 +314,18 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-      var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialX;
-      var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialY;
-      elm.finalX = elm.initialX + changeInX;
-      elm.finalY = elm.initialY + changeInY;
-      var newX = changeInX != 0 ? tweenFunc(t, elm.initialX, changeInX, duration * 1000) : elm.initialX;
-      var newY = changeInY != 0 ? tweenFunc(t, elm.initialY, changeInY, duration * 1000) : elm.initialY;
+      var newX = getNextStep(elm.initialX, elm.changeInX, t, duration, tweenFunc);
+      var newY = getNextStep(elm.initialY, elm.changeInY, t, duration, tweenFunc);
 
       elm.style.top = newX;
       elm.style.left = newY;
-      elm.currentX = newX;
-      elm.currentY = newY;
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
-      elm.style.top = elm.initialX = elm.currentX = elm.finalX;
-      elm.style.left = elm.initialY = elm.currentY = elm.finalY;
+      elm.style.top = elm.initialX = elm.finalX;
+      elm.style.left = elm.initialY = elm.finalY;
     }
   }
 
@@ -287,15 +352,14 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-      var changeInOpacity =  fadeLevel - elm.initialOpacity;
-      var newOpacity = tweenFunc(t, elm.initialOpacity, changeInOpacity, duration * 1000);
+      var newOpacity = getNextStep(elm.initialOpacity, elm.changeInOpacity, t, duration, tweenFunc);
       elm.style.opacity = newOpacity;
-      elm.currentOpacity = newOpacity;
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
-      elm.style.opacity = elm.initialOpacity = elm.currentOpacity = fadeLevel;
+
+      elm.style.opacity = elm.initialOpacity = elm.finalOpacity;
     }
   }
 
@@ -309,13 +373,9 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-      var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialScaleX;
-      var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialScaleY;
-      var changeInZ = typeof z == "string" ? parseFloat(z) : z - elm.initialScaleZ;
-
-      var newX = changeInX != 0 ? tweenFunc(t, elm.initialScaleX, changeInX, duration * 1000) : elm.initialScaleX;
-      var newY = changeInY != 0 ? tweenFunc(t, elm.initialScaleY, changeInY, duration * 1000) : elm.initialScaleY;
-      var newZ = changeInZ != 0 ? tweenFunc(t, elm.initialScaleZ, changeInZ, duration * 1000) : elm.initialScaleZ;
+      var newX = getNextStep(elm.initialScaleX, elm.changeInScaleX, t, duration, tweenFunc);
+      var newY = getNextStep(elm.initialScaleY, elm.changeInScaleY, t, duration, tweenFunc);
+      var newZ = getNextStep(elm.initialScaleZ, elm.changeInScaleZ, t, duration, tweenFunc);
 
       setTransformFunc(elm, "scaleX", "scaleX(" + newX + ")");
       setTransformFunc(elm, "scaleY", "scaleY(" + newY + ")");
@@ -325,12 +385,13 @@ window.$ = window.joon = (function(){
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
-      elm.initialScaleX = x;
-      elm.initialScaleY = y;
-      elm.initialScaleZ = z;
-      setTransformFunc(elm, "scaleX", "scaleX(" + x + ")");
-      setTransformFunc(elm, "scaleY", "scaleY(" + y + ")");
-      setTransformFunc(elm, "scaleZ", "scaleZ(" + z + ")");
+      elm.initialScaleX = elm.finalScaleX;
+      elm.initialScaleY = elm.finalScaleY;
+      elm.initialScaleZ = elm.finalScaleZ;
+
+      setTransformFunc(elm, "scaleX", "scaleX(" + elm.finalScaleX + ")");
+      setTransformFunc(elm, "scaleY", "scaleY(" + elm.finalScaleY + ")");
+      setTransformFunc(elm, "scaleZ", "scaleZ(" + elm.finalScaleZ + ")");
     }
   }
 
@@ -344,28 +405,25 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-      var changeInRotateX = typeof x == "string" ? parseFloat(x) : x - elm.initialRotateX;
-      var changeInRotateY = typeof y == "string" ? parseFloat(y) : y - elm.initialRotateY;
-      var changeInRotateZ = typeof z == "string" ? parseFloat(z) : z - elm.initialRotateZ;
+      var newX = getNextStep(elm.initialRotateX, elm.changeInRotateX, t, duration, tweenFunc);
+      var newY = getNextStep(elm.initialRotateY, elm.changeInRotateY, t, duration, tweenFunc);
+      var newZ = getNextStep(elm.initialRotateZ, elm.changeInRotateZ, t, duration, tweenFunc);
 
-      var newRotateX = changeInRotateX != 0 ? tweenFunc(t, elm.initialRotateX, changeInRotateX, duration * 1000) : elm.initialRotateX;
-      var newRotateY = changeInRotateY != 0 ? tweenFunc(t, elm.initialRotateY, changeInRotateY, duration * 1000) : elm.initialRotateY;
-      var newRotateZ = changeInRotateZ != 0 ? tweenFunc(t, elm.initialRotateZ, changeInRotateZ, duration * 1000) : elm.initialRotateZ;
-
-      setTransformFunc(elm, "rotateX", "rotateX(" + newRotateX + "deg)");
-      setTransformFunc(elm, "rotateY", "rotateY(" + newRotateY + "deg)");
-      setTransformFunc(elm, "rotateZ", "rotateZ(" + newRotateZ + "deg)");
+      setTransformFunc(elm, "rotateX", "rotateX(" + newX + "deg)");
+      setTransformFunc(elm, "rotateY", "rotateY(" + newY + "deg)");
+      setTransformFunc(elm, "rotateZ", "rotateZ(" + newZ + "deg)");
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
-      elm.initialRotateX = x;
-      elm.initialRotateY = y;
-      elm.initialRotateZ = z;
 
-      setTransformFunc(elm, "rotateX", "rotateX(" + x + "deg)");
-      setTransformFunc(elm, "rotateY", "rotateY(" + y + "deg)");
-      setTransformFunc(elm, "rotateZ", "rotateZ(" + z + "deg)");
+      elm.initialRotateX = elm.finalRotateX;
+      elm.initialRotateY = elm.finalRotateY;
+      elm.initialRotateZ = elm.finalRotateZ;
+
+      setTransformFunc(elm, "rotateX", "rotateX(" + elm.finalRotateX + "deg)");
+      setTransformFunc(elm, "rotateY", "rotateY(" + elm.finalRotateY + "deg)");
+      setTransformFunc(elm, "rotateZ", "rotateZ(" + elm.finalRotateZ + "deg)");
     }
   }
 
@@ -379,24 +437,20 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-      var changeInX = typeof x == "string" ? parseFloat(x) : x - elm.initialSkewX;
-      var changeInY = typeof y == "string" ? parseFloat(y) : y - elm.initialSkewY;
-
-      var newX = changeInX != 0 ? tweenFunc(t, elm.initialSkewX, changeInX, duration * 1000) : elm.initialSkewX;
-      var newY = changeInY != 0 ? tweenFunc(t, elm.initialSkewY, changeInY, duration * 1000) : elm.initialSkewY;
+      var newX = getNextStep(elm.initialSkewX, elm.changeInSkewX, t, duration, tweenFunc);
+      var newY = getNextStep(elm.initialSkewY, elm.changeInSkewY, t, duration, tweenFunc);
 
       var skew = "skew(" + newY + "deg, " + newX + "deg)";
       setTransformFunc(elm, "skew", skew);
-      elm.currentSkewX = newX;
-      elm.currentSkewY = newY;
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
-      elm.initialSkewX = elm.currentSkewX = x;
-      elm.initialSkewY = elm.currentSkewY = y;
-      setTransformFunc(elm, "skew", "skew(" + y + "deg, " + x + "deg)");
+      elm.initialSkewX = elm.finalSkewX;
+      elm.initialSkewY = elm.finalSkewY;
+
+      setTransformFunc(elm, "skew", "skew(" + elm.finalSkewY + "deg, " + elm.finalSkewX + "deg)");
     }
   }
 
@@ -410,30 +464,19 @@ window.$ = window.joon = (function(){
     }
 
     if (t < duration * 1000) {
-        if(!elm.initialRgbColor)
-        {
-          elm.initialRgbColor = extractRgb(window.getComputedStyle(elm, null).getPropertyValue(property));
-        }
-
-        var finalRgbColor = hexToRgb(value);
-
-        var changeInRgbColor = calcRgbDistance(elm.initialRgbColor, finalRgbColor);
-
-        var newRed = Math.round(tweenFunc(t, elm.initialRgbColor[0], changeInRgbColor[0], duration * 1000));
-        var newGreen = Math.round(tweenFunc(t, elm.initialRgbColor[1], changeInRgbColor[1], duration * 1000));
-        var newBlue = Math.round(tweenFunc(t, elm.initialRgbColor[2], changeInRgbColor[2], duration * 1000));
+        var newRed = Math.round(getNextStep(elm.initialRgbColor[0], elm.changeInRgbColor[0], t, duration, tweenFunc));
+        var newGreen = Math.round(getNextStep(elm.initialRgbColor[1], elm.changeInRgbColor[1], t, duration, tweenFunc));
+        var newBlue = Math.round(getNextStep(elm.initialRgbColor[2], elm.changeInRgbColor[2], t, duration, tweenFunc));
 
         var newRgbColor = [newRed, newGreen, newBlue];
         elm.style[property] = rgbToHex(newRgbColor);
-
-        elm.currentRgbColor = newRgbColor;
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
       elm.style[property] = value;
-      elm.initialRgbColor = elm.currentRgbColor = hexToRgb(value);
+      elm.initialRgbColor = elm.finalRgbColor;
     }
   }
 
@@ -449,30 +492,27 @@ window.$ = window.joon = (function(){
     var isBorderWidth = property.toLowerCase() == "border-width";
 
     if (t < duration * 1000) {
+      var newValue = getNextStep(elm.initialPropValue[property], elm.ChangeInPropValue[property], t, duration, tweenFunc);
 
-      if(!hasInitValue(elm, property))
-      {
-        var initVal = !isBorderWidth ? window.getComputedStyle(elm, null).getPropertyValue(property) : window.getComputedStyle(elm, null).getPropertyValue("border-right-width");
-        elm.initialPropValue[property] = parseFloat(initVal);
+      if(isBorderWidth){
+          setElmBorderWidth(elm, newValue);
       }
-
-      var changeInValue = value - elm.initialPropValue[property];
-
-      var newValue = changeInValue != 0 ? tweenFunc(t, elm.initialPropValue[property], changeInValue, duration * 1000) : elm.initialPropValue[property];
-
-      if(isBorderWidth) setElmBorderWidth(elm, newValue);
-      else elm.style[property] = newValue;
-
-      elm.currentPropValue[property] = newValue;
+      else{
+          elm.style[property] = newValue;
+      }
     }
     else{
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
-      if(isBorderWidth) setElmBorderWidth(elm, value);
-      else elm.style[property] = value;
+      if(isBorderWidth){
+          setElmBorderWidth(elm, elm.finalPropValue[property]);
+      }
+      else{
+          elm.style[property] = elm.finalPropValue[property];
+      }
 
-      elm.initialPropValue[property] = elm.currentPropValue[property] = value;
+      elm.initialPropValue[property] = elm.finalPropValue[property];
     }
   }
 
@@ -684,6 +724,18 @@ window.$ = window.joon = (function(){
       }
 
       return null;
+  }
+
+  function hasSign(param){
+      return param.indexOf("+") > -1 || param.indexOf("-") > -1;
+  }
+
+  function getNextStep(initValue, changeInValue, t, duration, tweenFunc){
+      return changeInValue != 0 ? tweenFunc(t, initValue, changeInValue, duration * 1000) : initValue;
+  }
+
+  function calcChangeInValue(val, initVal){
+      return (typeof val == "string" && hasSign(val)) ? parseFloat(val) : parseFloat(val) - initVal;
   }
 
   return function(selector){
