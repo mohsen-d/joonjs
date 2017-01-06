@@ -90,6 +90,20 @@ window.$ = window.joon = (function(){
 
           elm.changeInPropValue[property] = value - elm.initialPropValue[property];
           elm.finalPropValue[property] = elm.initialPropValue[property] + elm.changeInPropValue[property];
+      },
+
+      changeShadow: function(elm, [x, y, blur, spread, color]){
+          elm.changeInBoxShadowX = calcChangeInValue(x, elm.initBoxShadowX);
+          elm.changeInBoxShadowY = calcChangeInValue(y, elm.initBoxShadowY);
+          elm.changeInBoxShadowBlur = calcChangeInValue(blur, elm.initBoxShadowBlur);
+          elm.changeInBoxShadowSpread = calcChangeInValue(spread, elm.initBoxShadowSpread);
+          elm.changeInBoxShadowColor = [calcChangeInValue(color[0], elm.initBoxShadowColor[0]), calcChangeInValue(color[1], elm.initBoxShadowColor[1]), calcChangeInValue(color[2], elm.initBoxShadowColor[2])];
+
+          elm.finalBoxShadowX = elm.initBoxShadowX + elm.changeInBoxShadowX;
+          elm.finalBoxShadowY = elm.initBoxShadowY + elm.changeInBoxShadowY;
+          elm.finalBoxShadowBlur = elm.initBoxShadowBlur + elm.changeInBoxShadowBlur;
+          elm.finalBoxShadowSpread = elm.initBoxShadowSpread + elm.changeInBoxShadowSpread;
+          elm.finalBoxShadowColor = [elm.initBoxShadowColor[0] + elm.changeInBoxShadowColor[0], elm.initBoxShadowColor[1] + elm.changeInBoxShadowColor[1], elm.initBoxShadowColor[2] + elm.changeInBoxShadowColor[2]];
       }
   }
 
@@ -157,6 +171,27 @@ window.$ = window.joon = (function(){
       var initialSkew = getTransformFunc(elm, "skew") || [0, "0deg", "0deg"];
       elm.initialSkewX = parseFloat(initialSkew[2]);
       elm.initialSkewY = parseFloat(initialSkew[1]);
+    },
+
+    changeShadow: function(elm){
+        var initValue = window.getComputedStyle(elm, null).getPropertyValue("box-shadow");
+
+        if(initValue === "none"){
+            elm.initBoxShadowX = 0;
+            elm.initBoxShadowY = 0;
+            elm.initBoxShadowBlur = 0;
+            elm.initBoxShadowSpread = 0;
+            elm.initBoxShadowColor = [255, 255, 255];
+        }
+        else{
+            var regex = new RegExp("\\((.*)\\, (.*)\\, (.*)\\)(.*) (.*) (.*) (.*)", "i");
+            var initValues = initValue.match(regex);
+            elm.initBoxShadowX = parseFloat(initValues[4]);
+            elm.initBoxShadowY = parseFloat(initValues[5]);
+            elm.initBoxShadowBlur = parseFloat(initValues[6]);
+            elm.initBoxShadowSpread = parseFloat(initValues[7]);
+            elm.initBoxShadowColor = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
+        }
     }
   }
 
@@ -192,6 +227,7 @@ window.$ = window.joon = (function(){
 
   joon.prototype.at = function(...args){
     var self = this;
+
     if(arguments.length > 2){
       return self._atAction(args);
     }
@@ -475,7 +511,7 @@ window.$ = window.joon = (function(){
       elm.actionsParameters[action.index].completed = true;
       self._updateActionStatus(action);
 
-      elm.style[property] = value;
+      elm.style[property] = elm.finalRgbColor;
       elm.initialRgbColor = elm.finalRgbColor;
     }
   }
@@ -514,6 +550,45 @@ window.$ = window.joon = (function(){
 
       elm.initialPropValue[property] = elm.finalPropValue[property];
     }
+  }
+
+  joon.prototype.changeShadow = function(action, elm, startTime, duration, [x, y, blur, spread, color, tweenFunc]){
+      var self = this;
+
+      var t = Date.now() - startTime;
+
+      if(t < 0){
+        return;
+      }
+
+      if (t < duration * 1000) {
+        var newX = getNextStep(elm.initBoxShadowX, elm.changeInBoxShadowX, t, duration, tweenFunc);
+        var newY = getNextStep(elm.initBoxShadowY, elm.changeInBoxShadowY, t, duration, tweenFunc);
+        var newBlur = getNextStep(elm.initBoxShadowBlur, elm.changeInBoxShadowBlur, t, duration, tweenFunc);
+        var newSpread = getNextStep(elm.initBoxShadowSpread, elm.changeInBoxShadowSpread, t, duration, tweenFunc);
+
+        var newRed = Math.round(getNextStep(elm.initBoxShadowColor[0], elm.changeInBoxShadowColor[0], t, duration, tweenFunc));
+        var newGreen = Math.round(getNextStep(elm.initBoxShadowColor[1], elm.changeInBoxShadowColor[1], t, duration, tweenFunc));
+        var newBlue = Math.round(getNextStep(elm.initBoxShadowColor[2], elm.changeInBoxShadowColor[2], t, duration, tweenFunc));
+
+        var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px " + newSpread +"px";
+        console.log(newRule);
+        elm.style["box-shadow"] = newRule;
+      }
+      else{
+          elm.actionsParameters[action.index].completed = true;
+          self._updateActionStatus(action);
+
+          elm.initBoxShadowX = elm.finalBoxShadowX;
+          elm.initBoxShadowY = elm.finalBoxShadowY;
+          elm.initBoxShadowBlur = elm.finalBoxShadowBlur;
+          elm.initBoxShadowSpread = elm.finalBoxShadowSpread;
+          elm.initBoxShadowColor = elm.finalBoxShadowColor;
+
+          var finalRule = "rgb(" + elm.finalBoxShadowColor[0] + ", " + elm.finalBoxShadowColor[1] + ", " + elm.finalBoxShadowColor[2] + ") " + elm.finalBoxShadowX + "px " + elm.finalBoxShadowY + "px " + elm.finalBoxShadowBlur + "px " + elm.finalBoxShadowSpread +"px";
+          elm.style["box-shadow"] = finalRule;
+      }
+
   }
 
   joon.prototype._updateActionStatus = function(action){
@@ -602,7 +677,7 @@ window.$ = window.joon = (function(){
     if(typeof parameterRange == "number") return parameterRange;
 
     if(parameterRange.length != 2){
-      return 0;
+      return parameterRange;
     }
 
     if(float) return getRandomNumber(parameterRange[0], parameterRange[1]);
