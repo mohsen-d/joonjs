@@ -503,9 +503,9 @@ window.$ = window.joon = (function(){
             // here "this" means "document"
             while (target && target !== this) {
                 if (target.matches(selector)) {
-                  self.completedLaps = 0;
-                  self.run();
-                  return;
+                    self.completedLaps = 0;
+                    self.run();
+                    return;
                 }
                 target = target.parentNode;
             }
@@ -551,7 +551,7 @@ window.$ = window.joon = (function(){
         var action = {
           index: self.actionIndex++,
           name: func,
-          completed: false,
+          status: "not-started",
           possibleArgs: funcArgs,
           possibleStarts: start,
           possibleDurations: duration,
@@ -590,7 +590,7 @@ window.$ = window.joon = (function(){
                 self.actions.push({
                     index: self.actionIndex++,
                     name: action.name,
-                    completed: false,
+                    status: "not-started",
                     possibleArgs: action.possibleArgs,
                     // here we have to add the start parameter to the action start options.
                     // if template contains an action that starts at second 1
@@ -625,8 +625,7 @@ window.$ = window.joon = (function(){
 
         // we should reset actions and elements' parameters in each loop of run
         for(var action of self.actions){
-
-            action.completed = false;
+            action.status = "not-started";
 
             for(var elm of self.elements){
                 if(!elm.actionsParameters) elm.actionsParameters = [];
@@ -634,7 +633,8 @@ window.$ = window.joon = (function(){
                 elm.actionsParameters[action.index] = {
                     // change in Values and final values should be calculated again
                     calculated: false,
-                    completed: false,
+                    // is action applied on the element
+                    applied: false,
                     // get a random value for each parameter from provided array
                     args: getRandomParameters(action.possibleArgs),
                     // get a random value for duration from provided array
@@ -656,31 +656,37 @@ window.$ = window.joon = (function(){
         var self = this;
 
         // filter actions that are not finished yet
-        var actionsToRun = self.actions.filter(a => !a.completed);
+        var actionsToRun = self.actions.filter(a => a.status !== "completed");
 
         // if all actions are completed
         if(actionsToRun.length == 0){
 
-          self.completedLaps += 1;
+            self.completedLaps += 1;
 
-          // call the callback function if there is any
-          if(self.callback){
-            self.callback(self.elements);
-          }
+            // call the callback function if there is any
+            if(self.callback){
+                self.callback(self.elements, self.completedLaps);
+            }
 
-          if(self.totalLaps == "infinite" || self.totalLaps > self.completedLaps)
-          {
-            self.run();
-          }
+            if(self.totalLaps == "infinite" || self.totalLaps > self.completedLaps)
+            {
+                self.run();
+            }
         }
         else{
-          for(var action of actionsToRun) {
-            for(var elm of self.elements){
-              self._apply(action, elm);
-            }
-          }
+            for(var action of actionsToRun) {
+                if(self._isSameActionInProgress(action)){
+                    continue;
+                }
 
-          requestAnimationFrame(self._runActions.bind(self));
+                action.status = "in-progress";
+
+                for(var elm of self.elements){
+                  self._apply(action, elm);
+                }
+            }
+
+            requestAnimationFrame(self._runActions.bind(self));
         }
     }
 
@@ -727,13 +733,18 @@ window.$ = window.joon = (function(){
         }
         // if out of time , then jump to final values
         else{
-            // this element just completed this action
-            elm.actionsParameters[action.index].completed = true;
+            self._actionsFinalStepFunctions[action.name](elm, params);
+
+            // now we can say the action is applied to the element
+            elm.actionsParameters[action.index].applied = true;
             // if all elements has completed this action, then set action as completed
             self._updateActionStatus(action);
-
-            self._actionsFinalStepFunctions[action.name](elm, params);
         }
+    }
+
+    joon.prototype._isSameActionInProgress = function(action){
+        var sameActionsInProgress = this.actions.filter(a => a.index != action.index && a.name === action.name && a.status === "in-progress");
+        return sameActionsInProgress.length > 0;
     }
 
     /**
@@ -747,12 +758,14 @@ window.$ = window.joon = (function(){
         var notCompletedElements = 0;
 
         for(var elm of this.elements){
-          if(elm.actionsParameters[action.index].completed === false){
+          if(elm.actionsParameters[action.index].applied === false){
             notCompletedElements += 1;
           }
         }
 
-        if(notCompletedElements == 0) action.completed = true;
+        if(notCompletedElements == 0){
+            action.status = "completed";
+        }
     }
 
     /**
@@ -834,10 +847,9 @@ window.$ = window.joon = (function(){
                 choosenParameters[i] = param;
 
             // if it is a function then
-            // if it is for tweening (last parameter of all functions) we don't call and just send it back as is
-            // else if it is one of action parameters , we invoke it and use the result as parameter value
+            //  we invoke it and use the result as parameter value
             if(typeof param == "function")
-                choosenParameters[i] = i < funcParameters.length - 1 ? param() : param;
+                choosenParameters[i] = param();
 
             // if it is an array of strings we should choose one of its values randomly
             if(typeof param[0] == "string")
