@@ -38,7 +38,7 @@ window.$ = window.joon = (function(){
     *
     * change is the difference between initial value and value provided through action parameter
     * final value is sum of initial value and the change
-  **/
+    **/
     joon.prototype._actionsCalculations = {
         moveTo: function(elm, [x, y]){
           elm.changeInX = calcChangeInValue(x, elm.initialX);
@@ -147,7 +147,7 @@ window.$ = window.joon = (function(){
     * functions which will be called once at the beginning of animation to get initial values of elements'
     * properties that are going to be manipulated by defined actions
     * for example initial values of scaleX, scaleY and scaleZ in scaleTo action
-  **/
+    **/
     joon.prototype._initFunctions = {
         moveTo: function(elm){
             // get translate(x, y) values if they are set in style
@@ -281,6 +281,10 @@ window.$ = window.joon = (function(){
         }
     }
 
+    /**
+    * functions which do the calculations for each step of each animation
+    * e.g what should be each move (x, y) in the moveTo action
+    **/
     joon.prototype._actionsStepFunctions = {
 
         moveTo: function(elm, t, duration, tweenFunc, [x, y]){
@@ -381,6 +385,10 @@ window.$ = window.joon = (function(){
         }
     }
 
+    /**
+    * functions which finalize the animation
+    * which is taking the element to the final condition
+    **/
     joon.prototype._actionsFinalStepFunctions = {
 
         moveTo: function(elm, [x, y]){
@@ -704,6 +712,13 @@ window.$ = window.joon = (function(){
         return self;
     }
 
+    /**
+      * _apply() function manages steps of animations
+      * this function is the one which calls _actionsCalculations() & _actionsStepFunctions() & _actionsFinalStepFunctions()
+      *
+      * @param {object} action - a reference to the action
+      * @param {object} elm - a reference to the element
+    **/
     joon.prototype._apply = function(action, elm){
         var self = this;
 
@@ -742,6 +757,12 @@ window.$ = window.joon = (function(){
         }
     }
 
+    /**
+      * _isSameActionInProgress() function checks if another action of the same type is already in progress
+      *
+      *
+      * @param {object} action - the action you want to check its similar in progress actions
+    **/
     joon.prototype._isSameActionInProgress = function(action){
         var sameActionsInProgress = this.actions.filter(a => a.index != action.index && a.name === action.name && a.status === "in-progress");
         return sameActionsInProgress.length > 0;
