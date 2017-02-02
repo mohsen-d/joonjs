@@ -15,20 +15,20 @@ window.$ = window.joon = (function(){
         else{
           self.selector = selector;
           self.elements = getElements(selector);
-          self.animationLength = 0;
           self.totalLaps = 0;
           self.completedLaps = 0;
-          // index of currently playing action
+          // index of action in the list of actions
           self.actionIndex = 0;
         }
 
-        // all of actions defined on selected elements
+        // all of the actions defined on selected elements
         self.actions = [];
         self.name = "joon.js";
         self.description = "an animation library";
+        self.author = "Mohsen Dorparasti";
     }
 
-    // all of templates defined by you
+    // all of the templates defined by you
     joon.templates = {};
 
     /**
@@ -40,7 +40,7 @@ window.$ = window.joon = (function(){
     * final value is sum of initial value and the change
   **/
     joon.prototype._actionsCalculations = {
-        moveTo: function(elm, x, y){
+        moveTo: function(elm, [x, y]){
           elm.changeInX = calcChangeInValue(x, elm.initialX);
           elm.changeInY = calcChangeInValue(y, elm.initialY);
 
@@ -48,12 +48,12 @@ window.$ = window.joon = (function(){
           elm.finalY = elm.initialY + elm.changeInY;
         },
 
-        fadeTo: function(elm, x){
+        fadeTo: function(elm, [x]){
           elm.changeInOpacity =  calcChangeInValue(x, elm.initialOpacity);
           elm.finalOpacity = elm.initialOpacity + elm.changeInOpacity;
         },
 
-        rotate: function(elm, x, y, z){
+        rotate: function(elm, [x, y, z]){
           elm.changeInRotateX = calcChangeInValue(x, elm.initialRotateX);
           elm.changeInRotateY = calcChangeInValue(y, elm.initialRotateY);
           elm.changeInRotateZ = calcChangeInValue(z, elm.initialRotateZ);
@@ -63,7 +63,7 @@ window.$ = window.joon = (function(){
           elm.finalRotateZ = elm.initialRotateZ + elm.changeInRotateZ;
         },
 
-        skew: function(elm, x, y){
+        skew: function(elm, [x, y]){
           elm.changeInSkewX = calcChangeInValue(x, elm.initialSkewX);
           elm.changeInSkewY = calcChangeInValue(y, elm.initialSkewY);
 
@@ -71,7 +71,7 @@ window.$ = window.joon = (function(){
           elm.finalSkewY = elm.initialSkewY + elm.changeInSkewY;
         },
 
-        scaleTo: function(elm, x, y, z){
+        scaleTo: function(elm, [x, y, z]){
           elm.changeInScaleX = calcChangeInValue(x, elm.initialScaleX);
           elm.changeInScaleY = calcChangeInValue(y, elm.initialScaleY);
           elm.changeInScaleZ = calcChangeInValue(z, elm.initialScaleZ);
@@ -81,7 +81,7 @@ window.$ = window.joon = (function(){
           elm.finalScaleZ = elm.initialScaleZ + elm.changeInScaleZ;
         },
 
-        changeColor: function(elm, property, value){
+        changeColor: function(elm, [property, value]){
           // extract rgb equivalent of element's initial color
           if(!elm.initialRgbColor)
           {
@@ -96,7 +96,7 @@ window.$ = window.joon = (function(){
           elm.changeInRgbColor = calcRgbDistance(elm.initialRgbColor, elm.finalRgbColor);
         },
 
-        change: function(elm, property, value){
+        change: function(elm, [property, value]){
           // extract initial value of property
           if(!hasInitValue(elm, property))
           {
@@ -115,7 +115,7 @@ window.$ = window.joon = (function(){
           elm.finalPropValue[property] = elm.initialPropValue[property] + elm.changeInPropValue[property];
         },
 
-        changeBoxShadow: function(elm, x, y, blur, spread, color){
+        changeBoxShadow: function(elm, [x, y, blur, spread, color]){
           elm.changeInBoxShadowX = calcChangeInValue(x, elm.initBoxShadowX);
           elm.changeInBoxShadowY = calcChangeInValue(y, elm.initBoxShadowY);
           elm.changeInBoxShadowBlur = calcChangeInValue(blur, elm.initBoxShadowBlur);
@@ -129,7 +129,7 @@ window.$ = window.joon = (function(){
           elm.finalBoxShadowColor = [elm.initBoxShadowColor[0] + elm.changeInBoxShadowColor[0], elm.initBoxShadowColor[1] + elm.changeInBoxShadowColor[1], elm.initBoxShadowColor[2] + elm.changeInBoxShadowColor[2]];
         },
 
-        changeTextShadow: function(elm, x, y, blur, color){
+        changeTextShadow: function(elm, [x, y, blur, color]){
           elm.changeInTextShadowX = calcChangeInValue(x, elm.initTextShadowX);
           elm.changeInTextShadowY = calcChangeInValue(y, elm.initTextShadowY);
           elm.changeInTextShadowBlur = calcChangeInValue(blur, elm.initTextShadowBlur);
@@ -281,6 +281,190 @@ window.$ = window.joon = (function(){
         }
     }
 
+    joon.prototype._actionsStepFunctions = {
+
+        moveTo: function(elm, t, duration, tweenFunc, [x, y]){
+            // calc next steps
+            var newX = getNextStep(elm.initialX, elm.changeInX, t, duration, tweenFunc);
+            var newY = getNextStep(elm.initialY, elm.changeInY, t, duration, tweenFunc);
+
+            // apply new values
+            elm.style.top = newX;
+            elm.style.left = newY;
+        },
+
+        fadeTo: function(elm, t, duration, tweenFunc, [x]){
+            var newOpacity = getNextStep(elm.initialOpacity, elm.changeInOpacity, t, duration, tweenFunc);
+            elm.style.opacity = newOpacity;
+        },
+
+        scaleTo: function(elm, t, duration, tweenFunc, [x, y, z]){
+            var newX = getNextStep(elm.initialScaleX, elm.changeInScaleX, t, duration, tweenFunc);
+            var newY = getNextStep(elm.initialScaleY, elm.changeInScaleY, t, duration, tweenFunc);
+            var newZ = getNextStep(elm.initialScaleZ, elm.changeInScaleZ, t, duration, tweenFunc);
+
+            setTransformFunc(elm, "scaleX", "scaleX(" + newX + ")");
+            setTransformFunc(elm, "scaleY", "scaleY(" + newY + ")");
+            setTransformFunc(elm, "scaleZ", "scaleZ(" + newZ + ")");
+        },
+
+        rotate: function(elm, t, duration, tweenFunc, [x, y, z]){
+            var newX = getNextStep(elm.initialRotateX, elm.changeInRotateX, t, duration, tweenFunc);
+            var newY = getNextStep(elm.initialRotateY, elm.changeInRotateY, t, duration, tweenFunc);
+            var newZ = getNextStep(elm.initialRotateZ, elm.changeInRotateZ, t, duration, tweenFunc);
+
+            setTransformFunc(elm, "rotateX", "rotateX(" + newX + "deg)");
+            setTransformFunc(elm, "rotateY", "rotateY(" + newY + "deg)");
+            setTransformFunc(elm, "rotateZ", "rotateZ(" + newZ + "deg)");
+        },
+
+        skew: function(elm, t, duration, tweenFunc, [x, y]){
+            var newX = getNextStep(elm.initialSkewX, elm.changeInSkewX, t, duration, tweenFunc);
+            var newY = getNextStep(elm.initialSkewY, elm.changeInSkewY, t, duration, tweenFunc);
+
+            var skew = "skew(" + newY + "deg, " + newX + "deg)";
+            setTransformFunc(elm, "skew", skew);
+        },
+
+        changeColor: function(elm, t, duration, tweenFunc, [property, value]){
+            var newRed = Math.round(getNextStep(elm.initialRgbColor[0], elm.changeInRgbColor[0], t, duration, tweenFunc));
+            var newGreen = Math.round(getNextStep(elm.initialRgbColor[1], elm.changeInRgbColor[1], t, duration, tweenFunc));
+            var newBlue = Math.round(getNextStep(elm.initialRgbColor[2], elm.changeInRgbColor[2], t, duration, tweenFunc));
+
+            var newRgbColor = [newRed, newGreen, newBlue];
+            elm.style[property] = rgbToHex(newRgbColor);
+        },
+
+        change: function(elm, t, duration, tweenFunc, [property, value]){
+
+            // as border-width is not available in the element.style[] list and we have
+            // border-width-right, border-width-left, border-width-top and border-width-bottom
+            // we need to apply new values to these 4 properties instead
+            var isBorderWidth = property.toLowerCase() == "border-width";
+
+            var newValue = getNextStep(elm.initialPropValue[property], elm.changeInPropValue[property], t, duration, tweenFunc);
+
+            if(isBorderWidth){
+                setElmBorderWidth(elm, newValue);
+            }
+            else{
+                elm.style[property] = newValue;
+            }
+        },
+
+        changeBoxShadow: function(elm, t, duration, tweenFunc, [x, y, blur, spread, color]){
+            var newX = getNextStep(elm.initBoxShadowX, elm.changeInBoxShadowX, t, duration, tweenFunc);
+            var newY = getNextStep(elm.initBoxShadowY, elm.changeInBoxShadowY, t, duration, tweenFunc);
+            var newBlur = getNextStep(elm.initBoxShadowBlur, elm.changeInBoxShadowBlur, t, duration, tweenFunc);
+            var newSpread = getNextStep(elm.initBoxShadowSpread, elm.changeInBoxShadowSpread, t, duration, tweenFunc);
+
+            var newRed = Math.round(getNextStep(elm.initBoxShadowColor[0], elm.changeInBoxShadowColor[0], t, duration, tweenFunc));
+            var newGreen = Math.round(getNextStep(elm.initBoxShadowColor[1], elm.changeInBoxShadowColor[1], t, duration, tweenFunc));
+            var newBlue = Math.round(getNextStep(elm.initBoxShadowColor[2], elm.changeInBoxShadowColor[2], t, duration, tweenFunc));
+
+            var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px " + newSpread +"px";
+
+            elm.style["box-shadow"] = newRule;
+        },
+
+        changeTextShadow: function(elm, t, duration, tweenFunc, [x, y, blur, color]){
+            var newX = getNextStep(elm.initTextShadowX, elm.changeInTextShadowX, t, duration, tweenFunc);
+            var newY = getNextStep(elm.initTextShadowY, elm.changeInTextShadowY, t, duration, tweenFunc);
+            var newBlur = getNextStep(elm.initTextShadowBlur, elm.changeInTextShadowBlur, t, duration, tweenFunc);
+
+            var newRed = Math.round(getNextStep(elm.initTextShadowColor[0], elm.changeInTextShadowColor[0], t, duration, tweenFunc));
+            var newGreen = Math.round(getNextStep(elm.initTextShadowColor[1], elm.changeInTextShadowColor[1], t, duration, tweenFunc));
+            var newBlue = Math.round(getNextStep(elm.initTextShadowColor[2], elm.changeInTextShadowColor[2], t, duration, tweenFunc));
+
+            var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px";
+            elm.style["text-shadow"] = newRule;
+        }
+    }
+
+    joon.prototype._actionsFinalStepFunctions = {
+
+        moveTo: function(elm, [x, y]){
+            // update element position and initial values
+            elm.style.top = elm.initialX = elm.finalX;
+            elm.style.left = elm.initialY = elm.finalY;
+        },
+
+        fadeTo: function(elm, [x]){
+            elm.style.opacity = elm.initialOpacity = elm.finalOpacity;
+        },
+
+        scaleTo: function(elm, [x, y, z]){
+            elm.initialScaleX = elm.finalScaleX;
+            elm.initialScaleY = elm.finalScaleY;
+            elm.initialScaleZ = elm.finalScaleZ;
+
+            setTransformFunc(elm, "scaleX", "scaleX(" + elm.finalScaleX + ")");
+            setTransformFunc(elm, "scaleY", "scaleY(" + elm.finalScaleY + ")");
+            setTransformFunc(elm, "scaleZ", "scaleZ(" + elm.finalScaleZ + ")");
+        },
+
+        rotate: function(elm, [x, y, z]){
+            elm.initialRotateX = elm.finalRotateX;
+            elm.initialRotateY = elm.finalRotateY;
+            elm.initialRotateZ = elm.finalRotateZ;
+
+            setTransformFunc(elm, "rotateX", "rotateX(" + elm.finalRotateX + "deg)");
+            setTransformFunc(elm, "rotateY", "rotateY(" + elm.finalRotateY + "deg)");
+            setTransformFunc(elm, "rotateZ", "rotateZ(" + elm.finalRotateZ + "deg)");
+        },
+
+        skew: function(elm, [x, y]){
+            elm.initialSkewX = elm.finalSkewX;
+            elm.initialSkewY = elm.finalSkewY;
+
+            setTransformFunc(elm, "skew", "skew(" + elm.finalSkewY + "deg, " + elm.finalSkewX + "deg)");
+        },
+
+        changeColor: function(elm, [property, value]){
+            elm.style[property] = elm.finalRgbColor;
+            elm.initialRgbColor = elm.finalRgbColor;
+        },
+
+        change: function(elm, [property, value]){
+            // as border-width is not available in the element.style[] list and we have
+            // border-width-right, border-width-left, border-width-top and border-width-bottom
+            // we need to apply new values to these 4 properties instead
+            var isBorderWidth = property.toLowerCase() == "border-width";
+
+            if(isBorderWidth){
+                setElmBorderWidth(elm, elm.finalPropValue[property]);
+            }
+            else{
+                elm.style[property] = elm.finalPropValue[property];
+            }
+
+            elm.initialPropValue[property] = elm.finalPropValue[property];
+        },
+
+        changeBoxShadow: function(elm, [x, y, blur, spread, color]){
+            elm.initBoxShadowX = elm.finalBoxShadowX;
+            elm.initBoxShadowY = elm.finalBoxShadowY;
+            elm.initBoxShadowBlur = elm.finalBoxShadowBlur;
+            elm.initBoxShadowSpread = elm.finalBoxShadowSpread;
+            elm.initBoxShadowColor = elm.finalBoxShadowColor;
+
+            var finalRule = "rgb(" + elm.finalBoxShadowColor[0] + ", " + elm.finalBoxShadowColor[1] + ", " + elm.finalBoxShadowColor[2] + ") " + elm.finalBoxShadowX + "px " + elm.finalBoxShadowY + "px " + elm.finalBoxShadowBlur + "px " + elm.finalBoxShadowSpread +"px";
+
+            elm.style["box-shadow"] = finalRule;
+        },
+
+        changeTextShadow: function(elm, [x, y, blur, color]){
+            elm.initTextShadowX = elm.finalTextShadowX;
+            elm.initTextShadowY = elm.finalTextShadowY;
+            elm.initTextShadowBlur = elm.finalTextShadowBlur;
+            elm.initTextShadowSpread = elm.finalTextShadowSpread;
+            elm.initTextShadowColor = elm.finalTextShadowColor;
+
+            var finalRule = "rgb(" + elm.finalTextShadowColor[0] + ", " + elm.finalTextShadowColor[1] + ", " + elm.finalTextShadowColor[2] + ") " + elm.finalTextShadowX + "px " + elm.finalTextShadowY + "px " + elm.finalTextShadowBlur + "px";
+            elm.style["text-shadow"] = finalRule;
+        }
+    }
+
     /**
       * _init() function is called in the constructor and calls all functions defined in _initFunctions
       * to extract initial values of required properties of elements for each action
@@ -361,7 +545,7 @@ window.$ = window.joon = (function(){
       * @param {string} func - (don't provide if appending a template) name of action that you want to run at specified time (e.g moveTo or rotate)
       * @param {...args} funcArgs - (don't provide if appending a template) other parameters required by the action
     **/
-    joon.prototype._atAction = function([start, duration, func, ...funcArgs]){
+    joon.prototype._atAction = function([start, duration, tweenFunc, func, ...funcArgs]){
         var self = this;
 
         var action = {
@@ -370,7 +554,8 @@ window.$ = window.joon = (function(){
           completed: false,
           possibleArgs: funcArgs,
           possibleStarts: start,
-          possibleDurations: duration
+          possibleDurations: duration,
+          tweenFunc: tweenFunc
         };
 
         if(self.isTemplate){
@@ -399,21 +584,23 @@ window.$ = window.joon = (function(){
 
         if(joon.templates[templateName]){
 
-          var templateActions = joon.templates[templateName];
+            var templateActions = joon.templates[templateName];
 
-          for(var action of templateActions) {
-            self.actions.push({
-              index: action.index,
-              name: action.name,
-              completed: false,
-              possibleArgs: action.possibleArgs,
-              // here we have to add the start parameter to the action start options.
-              // if template contains an action that starts at second 1
-              // and template is appended at second 2
-              // then the actual start time of the action would be second 3
-              possibleStarts: RangeSum(action.possibleStarts, start),
-              possibleDurations: action.possibleDurations});
-          }
+            for(var action of templateActions) {
+                self.actions.push({
+                    index: self.actionIndex++,
+                    name: action.name,
+                    completed: false,
+                    possibleArgs: action.possibleArgs,
+                    // here we have to add the start parameter to the action start options.
+                    // if template contains an action that starts at second 1
+                    // and template is appended at second 2
+                    // then the actual start time of the action would be second 3
+                    possibleStarts: RangeSum(action.possibleStarts, start),
+                    possibleDurations: action.possibleDurations,
+                    tweenFunc: action.tweenFunc
+                });
+            }
         }
 
         return self;
@@ -489,11 +676,11 @@ window.$ = window.joon = (function(){
         else{
           for(var action of actionsToRun) {
             for(var elm of self.elements){
-              self[action.name](action, elm, elm.actionsParameters[action.index].startTime, elm.actionsParameters[action.index].duration, elm.actionsParameters[action.index].args);
+              self._apply(action, elm);
             }
           }
 
-          requestAnimationFrame(self.runActions.bind(self));
+          requestAnimationFrame(self._runActions.bind(self));
         }
     }
 
@@ -511,20 +698,14 @@ window.$ = window.joon = (function(){
         return self;
     }
 
-    /**
-      * moveTo() function allows you to move elements in x and y axis
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {(int|string)} x - change in x axis, could be an integer that tells the specific position or a string which specifies amount of change from initial location ("+30" means add 30px to its current value where 30 means go to position 30px)
-      * @param {(int|string)} y - change in y axis, could be an integer that tells the specific position or a string which specifies amount of change from initial location ("-50" means subtract 50px from its current value where -50 means go to position -50px)
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.moveTo = function(action, elm, startTime, duration, [x, y, tweenFunc]){
+    joon.prototype._apply = function(action, elm){
         var self = this;
+
+        // extracting parameters
+        var startTime = elm.actionsParameters[action.index].startTime;
+        var duration = elm.actionsParameters[action.index].duration;
+        var tweenFunc = action.tweenFunc;
+        var params = elm.actionsParameters[action.index].args;
 
         var t = Date.now() - startTime;
 
@@ -536,19 +717,13 @@ window.$ = window.joon = (function(){
         // if change and final values are not calculated , do it now
         // this should happen once, I expect
         if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, x, y);
+            self._actionsCalculations[action.name](elm, params);
             elm.actionsParameters[action.index].calculated = true;
         }
 
         // if still have time to animate the element, do it
         if (t < duration * 1000) {
-            // calc next steps
-            var newX = getNextStep(elm.initialX, elm.changeInX, t, duration, tweenFunc);
-            var newY = getNextStep(elm.initialY, elm.changeInY, t, duration, tweenFunc);
-
-            // apply new values
-            elm.style.top = newX;
-            elm.style.left = newY;
+            self._actionsStepFunctions[action.name](elm, t, duration, tweenFunc, params);
         }
         // if out of time , then jump to final values
         else{
@@ -557,434 +732,7 @@ window.$ = window.joon = (function(){
             // if all elements has completed this action, then set action as completed
             self._updateActionStatus(action);
 
-            // update element position and initial values
-            elm.style.top = elm.initialX = elm.finalX;
-            elm.style.left = elm.initialY = elm.finalY;
-        }
-    }
-
-    /**
-      * addContent() function allows you to update content of elements
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {string} content - text to add to the element's innerText
-    **/
-    joon.prototype.addContent = function(action, elm, startTime, duration,[content]){
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0 || action.completed){
-          return;
-        }
-
-        elm.innerText = elm.innerText + content;
-        elm.actionsParameters[action.index].completed = true;
-        self._updateActionStatus(action);
-    }
-
-    /**
-      * fadeTo() function changes opacity of elements to the given level
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {float} fadeLevel - final opacity
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.fadeTo = function(action, elm, startTime, duration, [fadeLevel, tweenFunc]){
-        var self = this;
-
-        // just like moveTo function
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-          return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, fadeLevel);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-          var newOpacity = getNextStep(elm.initialOpacity, elm.changeInOpacity, t, duration, tweenFunc);
-          elm.style.opacity = newOpacity;
-        }
-        else{
-          elm.actionsParameters[action.index].completed = true;
-          self._updateActionStatus(action);
-
-          elm.style.opacity = elm.initialOpacity = elm.finalOpacity;
-        }
-    }
-
-    /**
-      * scaleTo() function changes scale of elements according to given parameters
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {(int|string)} x - change in x scale, could be an integer that tells the specific scale or a string which specifies amount of change from initial scale ("+.2" means add .2 to its current scale where .2 means scale to .2)
-      * @param {(int|string)} y - change in y scale, could be an integer that tells the specific scale or a string which specifies amount of change from initial scale ("+.2" means add .2 to its current scale where .2 means scale to .2)
-      * @param {(int|string)} z - change in z scale, could be an integer that tells the specific scale or a string which specifies amount of change from initial scale ("+.2" means add .2 to its current scale where .2 means scale to .2)
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.scaleTo = function(action, elm, startTime, duration, [x, y, z, tweenFunc]){
-        var self = this;
-
-        // just like moveTo function
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-          return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, x, y, z);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-          var newX = getNextStep(elm.initialScaleX, elm.changeInScaleX, t, duration, tweenFunc);
-          var newY = getNextStep(elm.initialScaleY, elm.changeInScaleY, t, duration, tweenFunc);
-          var newZ = getNextStep(elm.initialScaleZ, elm.changeInScaleZ, t, duration, tweenFunc);
-
-          setTransformFunc(elm, "scaleX", "scaleX(" + newX + ")");
-          setTransformFunc(elm, "scaleY", "scaleY(" + newY + ")");
-          setTransformFunc(elm, "scaleZ", "scaleZ(" + newZ + ")");
-        }
-        else{
-          elm.actionsParameters[action.index].completed = true;
-          self._updateActionStatus(action);
-
-          elm.initialScaleX = elm.finalScaleX;
-          elm.initialScaleY = elm.finalScaleY;
-          elm.initialScaleZ = elm.finalScaleZ;
-
-          setTransformFunc(elm, "scaleX", "scaleX(" + elm.finalScaleX + ")");
-          setTransformFunc(elm, "scaleY", "scaleY(" + elm.finalScaleY + ")");
-          setTransformFunc(elm, "scaleZ", "scaleZ(" + elm.finalScaleZ + ")");
-        }
-    }
-
-    /**
-      * rotate() function rotates elements according to given parameters
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {(int|string)} x - rotate degree in x axis, could be an integer that tells the specific degree or a string which specifies amount of change from initial state ("45" means rotate element 45 more degrees where 45 means rotate to 45 degrees)
-      * @param {(int|string)} y - rotate degree in y axis, could be an integer that tells the specific degree or a string which specifies amount of change from initial state ("20" means rotate element 20 more degrees where 20 means rotate to 20 degrees)
-      * @param {(int|string)} z - rotate degree in z axis, could be an integer that tells the specific degree or a string which specifies amount of change from initial state ("90" means rotate element 90 more degrees where -30 means rotate to -30 degrees)
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.rotate = function(action, elm, startTime, duration, [x, y, z, tweenFunc]){
-
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-          return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, x, y, z);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-          var newX = getNextStep(elm.initialRotateX, elm.changeInRotateX, t, duration, tweenFunc);
-          var newY = getNextStep(elm.initialRotateY, elm.changeInRotateY, t, duration, tweenFunc);
-          var newZ = getNextStep(elm.initialRotateZ, elm.changeInRotateZ, t, duration, tweenFunc);
-
-          setTransformFunc(elm, "rotateX", "rotateX(" + newX + "deg)");
-          setTransformFunc(elm, "rotateY", "rotateY(" + newY + "deg)");
-          setTransformFunc(elm, "rotateZ", "rotateZ(" + newZ + "deg)");
-        }
-        else{
-          elm.actionsParameters[action.index].completed = true;
-          self._updateActionStatus(action);
-
-          elm.initialRotateX = elm.finalRotateX;
-          elm.initialRotateY = elm.finalRotateY;
-          elm.initialRotateZ = elm.finalRotateZ;
-
-          setTransformFunc(elm, "rotateX", "rotateX(" + elm.finalRotateX + "deg)");
-          setTransformFunc(elm, "rotateY", "rotateY(" + elm.finalRotateY + "deg)");
-          setTransformFunc(elm, "rotateZ", "rotateZ(" + elm.finalRotateZ + "deg)");
-        }
-    }
-
-    /**
-      * skew() function
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {(int|string)} x - skew degree in x axis, could be an integer that tells the specific degree or a string which specifies amount of change from initial state ("45" means skew element 45 more degrees where 45 means skew 45 degrees)
-      * @param {(int|string)} y - skew degree in y axis, could be an integer that tells the specific degree or a string which specifies amount of change from initial state ("20" means skew element 20 more degrees where 20 means skew 20 degrees)
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.skew = function(action, elm, startTime, duration, [x, y, tweenFunc]){
-
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-          return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, x, y);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-          var newX = getNextStep(elm.initialSkewX, elm.changeInSkewX, t, duration, tweenFunc);
-          var newY = getNextStep(elm.initialSkewY, elm.changeInSkewY, t, duration, tweenFunc);
-
-          var skew = "skew(" + newY + "deg, " + newX + "deg)";
-          setTransformFunc(elm, "skew", skew);
-        }
-        else{
-          elm.actionsParameters[action.index].completed = true;
-          self._updateActionStatus(action);
-
-          elm.initialSkewX = elm.finalSkewX;
-          elm.initialSkewY = elm.finalSkewY;
-
-          setTransformFunc(elm, "skew", "skew(" + elm.finalSkewY + "deg, " + elm.finalSkewX + "deg)");
-        }
-    }
-
-    /**
-      * changeColor() function allows you to change value of properties such as background-color, color, border-color and ...
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {string} property - name of the property you want to change e.g "background-color"
-      * @param {string} value - hexa form of final color e.g "#ffffff"
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.changeColor = function(action, elm, startTime, duration, [property, value, tweenFunc]){
-
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-          return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, property, value);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-            var newRed = Math.round(getNextStep(elm.initialRgbColor[0], elm.changeInRgbColor[0], t, duration, tweenFunc));
-            var newGreen = Math.round(getNextStep(elm.initialRgbColor[1], elm.changeInRgbColor[1], t, duration, tweenFunc));
-            var newBlue = Math.round(getNextStep(elm.initialRgbColor[2], elm.changeInRgbColor[2], t, duration, tweenFunc));
-
-            var newRgbColor = [newRed, newGreen, newBlue];
-            elm.style[property] = rgbToHex(newRgbColor);
-        }
-        else{
-          elm.actionsParameters[action.index].completed = true;
-          self._updateActionStatus(action);
-
-          elm.style[property] = elm.finalRgbColor;
-          elm.initialRgbColor = elm.finalRgbColor;
-        }
-    }
-
-    /**
-      * change() function allows you to change value of properties which accept numeric values
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {string} property - name of the property you want to change e.g "background-color"
-      * @param {int} value - final value of property
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.change = function(action, elm, startTime, duration, [property, value, tweenFunc]){
-
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-          return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, property, value);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        // as border-width is not available in the element.style[] list and we have
-        // border-width-right, border-width-left, border-width-top and border-width-bottom
-        // we need to apply new values to these 4 properties instead
-        var isBorderWidth = property.toLowerCase() == "border-width";
-
-        if (t < duration * 1000) {
-          var newValue = getNextStep(elm.initialPropValue[property], elm.changeInPropValue[property], t, duration, tweenFunc);
-
-          if(isBorderWidth){
-              setElmBorderWidth(elm, newValue);
-          }
-          else{
-              elm.style[property] = newValue;
-          }
-        }
-        else{
-          elm.actionsParameters[action.index].completed = true;
-          self._updateActionStatus(action);
-
-          if(isBorderWidth){
-              setElmBorderWidth(elm, elm.finalPropValue[property]);
-          }
-          else{
-              elm.style[property] = elm.finalPropValue[property];
-          }
-
-          elm.initialPropValue[property] = elm.finalPropValue[property];
-        }
-    }
-
-    /**
-      * changeBoxShadow() function
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {int} x - x-offset of final box-shadow
-      * @param {int} y - y-offset of final box-shadow
-      * @param {int} blur - blur of final box-shadow
-      * @param {int} spread - spread of final box-shadow
-      * @param {int[]} color - color of final box-shadow [red, green, blue]
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.changeBoxShadow = function(action, elm, startTime, duration, [x, y, blur, spread, color, tweenFunc]){
-
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-            return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, x, y, blur, spread, color);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-            var newX = getNextStep(elm.initBoxShadowX, elm.changeInBoxShadowX, t, duration, tweenFunc);
-            var newY = getNextStep(elm.initBoxShadowY, elm.changeInBoxShadowY, t, duration, tweenFunc);
-            var newBlur = getNextStep(elm.initBoxShadowBlur, elm.changeInBoxShadowBlur, t, duration, tweenFunc);
-            var newSpread = getNextStep(elm.initBoxShadowSpread, elm.changeInBoxShadowSpread, t, duration, tweenFunc);
-
-            var newRed = Math.round(getNextStep(elm.initBoxShadowColor[0], elm.changeInBoxShadowColor[0], t, duration, tweenFunc));
-            var newGreen = Math.round(getNextStep(elm.initBoxShadowColor[1], elm.changeInBoxShadowColor[1], t, duration, tweenFunc));
-            var newBlue = Math.round(getNextStep(elm.initBoxShadowColor[2], elm.changeInBoxShadowColor[2], t, duration, tweenFunc));
-
-            var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px " + newSpread +"px";
-
-            elm.style["box-shadow"] = newRule;
-        }
-        else{
-            elm.actionsParameters[action.index].completed = true;
-            self._updateActionStatus(action);
-
-            elm.initBoxShadowX = elm.finalBoxShadowX;
-            elm.initBoxShadowY = elm.finalBoxShadowY;
-            elm.initBoxShadowBlur = elm.finalBoxShadowBlur;
-            elm.initBoxShadowSpread = elm.finalBoxShadowSpread;
-            elm.initBoxShadowColor = elm.finalBoxShadowColor;
-
-            var finalRule = "rgb(" + elm.finalBoxShadowColor[0] + ", " + elm.finalBoxShadowColor[1] + ", " + elm.finalBoxShadowColor[2] + ") " + elm.finalBoxShadowX + "px " + elm.finalBoxShadowY + "px " + elm.finalBoxShadowBlur + "px " + elm.finalBoxShadowSpread +"px";
-
-            elm.style["box-shadow"] = finalRule;
-        }
-    }
-
-    /**
-      * changeTextShadow() function
-      *
-      *
-      * @param {object} action - a reference to the action itself
-      * @param {object} elm - a reference to the element on which changes are applied
-      * @param {(float|int)} startTime - starting time of action in seconds
-      * @param {(float|int)} duration - duration of action in seconds
-      * @param {int} x - x-offset of final text-shadow
-      * @param {int} y - y-offset of final text-shadow
-      * @param {int} blur - blur of final text-shadow
-      * @param {int[]} color - color of final text-shadow [red, green, blue]
-      * @param {function} tweenFunc - a tween functions that enhances the aimation progress
-    **/
-    joon.prototype.changeTextShadow = function(action, elm, startTime, duration, [x, y, blur, color, tweenFunc]){
-        var self = this;
-
-        var t = Date.now() - startTime;
-
-        if(t < 0){
-            return;
-        }
-
-        if(!elm.actionsParameters[action.index].calculated){
-            self._actionsCalculations[action.name](elm, x, y, blur, color);
-            elm.actionsParameters[action.index].calculated = true;
-        }
-
-        if (t < duration * 1000) {
-            var newX = getNextStep(elm.initTextShadowX, elm.changeInTextShadowX, t, duration, tweenFunc);
-            var newY = getNextStep(elm.initTextShadowY, elm.changeInTextShadowY, t, duration, tweenFunc);
-            var newBlur = getNextStep(elm.initTextShadowBlur, elm.changeInTextShadowBlur, t, duration, tweenFunc);
-
-            var newRed = Math.round(getNextStep(elm.initTextShadowColor[0], elm.changeInTextShadowColor[0], t, duration, tweenFunc));
-            var newGreen = Math.round(getNextStep(elm.initTextShadowColor[1], elm.changeInTextShadowColor[1], t, duration, tweenFunc));
-            var newBlue = Math.round(getNextStep(elm.initTextShadowColor[2], elm.changeInTextShadowColor[2], t, duration, tweenFunc));
-
-            var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px";
-            elm.style["text-shadow"] = newRule;
-        }
-        else{
-            elm.actionsParameters[action.index].completed = true;
-            self._updateActionStatus(action);
-
-            elm.initTextShadowX = elm.finalTextShadowX;
-            elm.initTextShadowY = elm.finalTextShadowY;
-            elm.initTextShadowBlur = elm.finalTextShadowBlur;
-            elm.initTextShadowSpread = elm.finalTextShadowSpread;
-            elm.initTextShadowColor = elm.finalTextShadowColor;
-
-            var finalRule = "rgb(" + elm.finalTextShadowColor[0] + ", " + elm.finalTextShadowColor[1] + ", " + elm.finalTextShadowColor[2] + ") " + elm.finalTextShadowX + "px " + elm.finalTextShadowY + "px " + elm.finalTextShadowBlur + "px";
-            elm.style["text-shadow"] = finalRule;
+            self._actionsFinalStepFunctions[action.name](elm, params);
         }
     }
 
