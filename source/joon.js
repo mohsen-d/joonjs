@@ -7,29 +7,30 @@ window.$ = window.joon = (function(){
         // @templateName
         // means you want to define a template (several actions together) to use in animations later
         if(selector.startsWith("@")){
-          self.templateName = selector.substring(1);
-          self.isTemplate = true;
+          self._templateName = selector.substring(1);
+          self._isTemplate = true;
         }
         // else you are defining an animation on elements
         // you can use all selectors supported by js document.querySelectorAll function
         else{
-          self.selector = selector;
-          self.elements = getElements(selector);
-          self.totalLaps = 0;
-          self.completedLaps = 0;
+          self._selector = selector;
+          self._elements = getElements(selector);
+          self._totalLaps = 0;
+          self._completedLaps = 0;
           // index of action in the list of actions
-          self.actionIndex = 0;
+          self._actionIndex = 0;
         }
 
         // all of the actions defined on selected elements
-        self.actions = [];
+        self._actions = [];
+
         self.name = "joon.js";
         self.description = "an animation library";
         self.author = "Mohsen Dorparasti";
     }
 
     // all of the templates defined by you
-    joon.templates = {};
+    joon._templates = {};
 
     /**
     * functions which will be used to calculate total change in values and final values of elements'
@@ -140,144 +141,6 @@ window.$ = window.joon = (function(){
           elm.finalTextShadowBlur = elm.initTextShadowBlur + elm.changeInTextShadowBlur;
           elm.finalTextShadowSpread = elm.initTextShadowSpread + elm.changeInTextShadowSpread;
           elm.finalTextShadowColor = [elm.initTextShadowColor[0] + elm.changeInTextShadowColor[0], elm.initTextShadowColor[1] + elm.changeInTextShadowColor[1], elm.initTextShadowColor[2] + elm.changeInTextShadowColor[2]];
-        }
-    }
-
-    /**
-    * functions which will be called once at the beginning of animation to get initial values of elements'
-    * properties that are going to be manipulated by defined actions
-    * for example initial values of scaleX, scaleY and scaleZ in scaleTo action
-    **/
-    joon.prototype._initFunctions = {
-        moveTo: function(elm){
-            // get translate(x, y) values if they are set in style
-            var initialTranslate = getTransformFunc(elm, "translate") || [0, 0, 0];
-
-            // get element's initial top and left
-            var initialTop = window.getComputedStyle(elm, null).getPropertyValue("top");
-            var initialLeft = window.getComputedStyle(elm, null).getPropertyValue("left");
-
-            // initial values are sum of initial top and left and translation applied to them
-            // e.g if element's top is 10px and it's translated 30px then initial value would be 40px.
-            elm.initialX = parseFloat(initialTranslate[2]) + parseFloat(initialTop);
-            elm.initialY = parseFloat(initialTranslate[1]) + parseFloat(initialLeft);
-        },
-
-        fadeTo: function(elm){
-          elm.initialOpacity = elm.style.opacity || 1;
-        },
-
-        scaleTo: function(elm){
-            //to get initial scale value of element
-            // first we check if scale3d() is defined for element
-            var initialScale = getTransformFunc(elm, "scale3d");
-
-            if(initialScale){
-                elm.initialScaleX = parseFloat(initialScale[1]);
-                elm.initialScaleY = parseFloat(initialScale[2]);
-                elm.initialScaleZ = parseFloat(initialScale[3]);
-            }
-            // else look for scale()
-            else{
-                initialScale = getTransformFunc(elm, "scale");
-
-                if(initialScale){
-                    elm.initialScaleX = parseFloat(initialScale[1]);
-                    elm.initialScaleY = initialScale.length > 2 ? parseFloat(initialScale[2]) : parseFloat(initialScale[1]);
-                    elm.initialScaleZ = 1;
-                }
-                // finally look for scaleX(), scaleY() and scaleZ()
-                else{
-                     var initialScaleX = getTransformFunc(elm, "scaleX") || [0, "1"];
-                     var initialScaleY = getTransformFunc(elm, "scaleY") || [0, "1"];
-                     var initialScaleZ = getTransformFunc(elm, "ScaleZ") || [0, "1"];
-
-                     elm.initialScaleX = parseFloat(initialScaleX[1]);
-                     elm.initialScaleY = parseFloat(initialScaleY[1]);
-                     elm.initialScaleZ = parseFloat(initialScaleZ[1]);
-                 }
-            }
-        },
-
-        rotate: function(elm){
-            // to get initial rotate value of element
-            // first we check if rotate() is defined for element
-            var initialRotate = getTransformFunc(elm, "rotate");
-
-            if(initialRotate){
-                elm.initialRotateX = parseFloat(initialRotate[1]);
-                elm.initialRotateY = parseFloat(initialRotate[1]);
-                return;
-            }
-
-            // else we should look for rotateX(), rotateY() and rotateZ()
-             var initialRotateX = getTransformFunc(elm, "rotateX") || [0, "0deg"];
-             var initialRotateY = getTransformFunc(elm, "rotateY") || [0, "0deg"];
-             var initialRotateZ = getTransformFunc(elm, "rotateZ") || [0, "0deg"];
-
-             elm.initialRotateX = parseFloat(initialRotateX[1]);
-             elm.initialRotateY = parseFloat(initialRotateY[1]);
-             elm.initialRotateZ = parseFloat(initialRotateZ[1]);
-        },
-
-        skew: function(elm){
-          var initialSkew = getTransformFunc(elm, "skew") || [0, "0deg", "0deg"];
-          elm.initialSkewX = parseFloat(initialSkew[2]);
-          elm.initialSkewY = parseFloat(initialSkew[1]);
-        },
-
-        changeBoxShadow: function(elm){
-            var initValue = window.getComputedStyle(elm, null).getPropertyValue("box-shadow");
-
-            // if no box-shadow is defined, set all initial values as 0 and color as white
-            if(initValue === "none"){
-                elm.initBoxShadowX = 0;
-                elm.initBoxShadowY = 0;
-                elm.initBoxShadowBlur = 0;
-                elm.initBoxShadowSpread = 0;
-                elm.initBoxShadowColor = [255, 255, 255];
-            }
-            // else extract values by usign regex
-            // structure is box-shadow: rgb(red, green, blue) x y blur spread;
-            else{
-                var regex = new RegExp("\\((.*)\\, (.*)\\, (.*)\\)(.*) (.*) (.*) (.*)", "i");
-                var initValues = initValue.match(regex);
-                elm.initBoxShadowX = parseFloat(initValues[4]);
-                elm.initBoxShadowY = parseFloat(initValues[5]);
-                elm.initBoxShadowBlur = parseFloat(initValues[6]);
-                elm.initBoxShadowSpread = parseFloat(initValues[7]);
-                elm.initBoxShadowColor = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
-            }
-        },
-
-        changeTextShadow: function(elm){
-            var initValue = window.getComputedStyle(elm, null).getPropertyValue("text-shadow");
-
-            // if no text-shadow is defined, set all initial values as 0 and color as white
-            if(initValue === "none"){
-                elm.initTextShadowX = 0;
-                elm.initTextShadowY = 0;
-                elm.initTextShadowBlur = 0;
-                elm.initTextShadowColor = [255, 255, 255];
-            }
-            // else extract values by using regex
-            // structure is text-shadow: rgb(red, green, blue) x y blur;
-            else{
-                var regex = new RegExp("\\((.*)\\, (.*)\\, (.*)\\)(.*) (.*) (.*)", "i");
-                var initValues = initValue.match(regex);
-                elm.initTextShadowX = parseFloat(initValues[4]);
-                elm.initTextShadowY = parseFloat(initValues[5]);
-                elm.initTextShadowBlur = parseFloat(initValues[6]);
-                elm.initTextShadowColor = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
-            }
-        },
-
-        change: function(elm){
-            // we extract initial value in _actionsCalculations()
-            // because we need parameters like properyName to get the value
-            elm.initialPropValue = [];
-            elm.changeInPropValue = [];
-            elm.finalPropValue = [];
         }
     }
 
@@ -474,6 +337,144 @@ window.$ = window.joon = (function(){
     }
 
     /**
+    * functions which will be called once at the beginning of animation to get initial values of elements'
+    * properties that are going to be manipulated by defined actions
+    * for example initial values of scaleX, scaleY and scaleZ in scaleTo action
+    **/
+    joon.prototype._initFunctions = {
+        moveTo: function(elm){
+            // get translate(x, y) values if they are set in style
+            var initialTranslate = getTransformFunc(elm, "translate") || [0, 0, 0];
+
+            // get element's initial top and left
+            var initialTop = window.getComputedStyle(elm, null).getPropertyValue("top");
+            var initialLeft = window.getComputedStyle(elm, null).getPropertyValue("left");
+
+            // initial values are sum of initial top and left and translation applied to them
+            // e.g if element's top is 10px and it's translated 30px then initial value would be 40px.
+            elm.initialX = parseFloat(initialTranslate[2]) + parseFloat(initialTop);
+            elm.initialY = parseFloat(initialTranslate[1]) + parseFloat(initialLeft);
+        },
+
+        fadeTo: function(elm){
+          elm.initialOpacity = elm.style.opacity || 1;
+        },
+
+        scaleTo: function(elm){
+            //to get initial scale value of element
+            // first we check if scale3d() is defined for element
+            var initialScale = getTransformFunc(elm, "scale3d");
+
+            if(initialScale){
+                elm.initialScaleX = parseFloat(initialScale[1]);
+                elm.initialScaleY = parseFloat(initialScale[2]);
+                elm.initialScaleZ = parseFloat(initialScale[3]);
+            }
+            // else look for scale()
+            else{
+                initialScale = getTransformFunc(elm, "scale");
+
+                if(initialScale){
+                    elm.initialScaleX = parseFloat(initialScale[1]);
+                    elm.initialScaleY = initialScale.length > 2 ? parseFloat(initialScale[2]) : parseFloat(initialScale[1]);
+                    elm.initialScaleZ = 1;
+                }
+                // finally look for scaleX(), scaleY() and scaleZ()
+                else{
+                     var initialScaleX = getTransformFunc(elm, "scaleX") || [0, "1"];
+                     var initialScaleY = getTransformFunc(elm, "scaleY") || [0, "1"];
+                     var initialScaleZ = getTransformFunc(elm, "ScaleZ") || [0, "1"];
+
+                     elm.initialScaleX = parseFloat(initialScaleX[1]);
+                     elm.initialScaleY = parseFloat(initialScaleY[1]);
+                     elm.initialScaleZ = parseFloat(initialScaleZ[1]);
+                 }
+            }
+        },
+
+        rotate: function(elm){
+            // to get initial rotate value of element
+            // first we check if rotate() is defined for element
+            var initialRotate = getTransformFunc(elm, "rotate");
+
+            if(initialRotate){
+                elm.initialRotateX = parseFloat(initialRotate[1]);
+                elm.initialRotateY = parseFloat(initialRotate[1]);
+                return;
+            }
+
+            // else we should look for rotateX(), rotateY() and rotateZ()
+             var initialRotateX = getTransformFunc(elm, "rotateX") || [0, "0deg"];
+             var initialRotateY = getTransformFunc(elm, "rotateY") || [0, "0deg"];
+             var initialRotateZ = getTransformFunc(elm, "rotateZ") || [0, "0deg"];
+
+             elm.initialRotateX = parseFloat(initialRotateX[1]);
+             elm.initialRotateY = parseFloat(initialRotateY[1]);
+             elm.initialRotateZ = parseFloat(initialRotateZ[1]);
+        },
+
+        skew: function(elm){
+          var initialSkew = getTransformFunc(elm, "skew") || [0, "0deg", "0deg"];
+          elm.initialSkewX = parseFloat(initialSkew[2]);
+          elm.initialSkewY = parseFloat(initialSkew[1]);
+        },
+
+        changeBoxShadow: function(elm){
+            var initValue = window.getComputedStyle(elm, null).getPropertyValue("box-shadow");
+
+            // if no box-shadow is defined, set all initial values as 0 and color as white
+            if(initValue === "none"){
+                elm.initBoxShadowX = 0;
+                elm.initBoxShadowY = 0;
+                elm.initBoxShadowBlur = 0;
+                elm.initBoxShadowSpread = 0;
+                elm.initBoxShadowColor = [255, 255, 255];
+            }
+            // else extract values by usign regex
+            // structure is box-shadow: rgb(red, green, blue) x y blur spread;
+            else{
+                var regex = new RegExp("\\((.*)\\, (.*)\\, (.*)\\)(.*) (.*) (.*) (.*)", "i");
+                var initValues = initValue.match(regex);
+                elm.initBoxShadowX = parseFloat(initValues[4]);
+                elm.initBoxShadowY = parseFloat(initValues[5]);
+                elm.initBoxShadowBlur = parseFloat(initValues[6]);
+                elm.initBoxShadowSpread = parseFloat(initValues[7]);
+                elm.initBoxShadowColor = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
+            }
+        },
+
+        changeTextShadow: function(elm){
+            var initValue = window.getComputedStyle(elm, null).getPropertyValue("text-shadow");
+
+            // if no text-shadow is defined, set all initial values as 0 and color as white
+            if(initValue === "none"){
+                elm.initTextShadowX = 0;
+                elm.initTextShadowY = 0;
+                elm.initTextShadowBlur = 0;
+                elm.initTextShadowColor = [255, 255, 255];
+            }
+            // else extract values by using regex
+            // structure is text-shadow: rgb(red, green, blue) x y blur;
+            else{
+                var regex = new RegExp("\\((.*)\\, (.*)\\, (.*)\\)(.*) (.*) (.*)", "i");
+                var initValues = initValue.match(regex);
+                elm.initTextShadowX = parseFloat(initValues[4]);
+                elm.initTextShadowY = parseFloat(initValues[5]);
+                elm.initTextShadowBlur = parseFloat(initValues[6]);
+                elm.initTextShadowColor = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
+            }
+        },
+
+        change: function(elm){
+            // we extract initial value in _actionsCalculations()
+            // because we need parameters like properyName to get the value
+            elm.initialPropValue = [];
+            elm.changeInPropValue = [];
+            elm.finalPropValue = [];
+        }
+    }
+
+    /**
       * _init() function is called in the constructor and calls all functions defined in _initFunctions
       * to extract initial values of required properties of elements for each action
     **/
@@ -481,68 +482,16 @@ window.$ = window.joon = (function(){
         var self = this;
 
         // do nothing if developer is defining a template
-        if(self.isTemplate) return self;
+        if(self._isTemplate) return self;
 
         // else get required initial values of each element's properties for each action
-        for(var elm of self.elements){
+        for(var elm of self._elements){
           for(var func in self._initFunctions)
           {
             self._initFunctions[func](elm);
           }
         }
         return self;
-    }
-
-    /**
-      * on() function enables you to bind start of the animation to an event
-      *
-      * @param {String} selector - elements that trigger the event like ".trigger"
-      * @param {String} eventName - name of the event like "click"
-    **/
-    joon.prototype.on = function(selector, eventName){
-        var self = this;
-
-        // here we have defined a general eventListener on document
-        // when the event is triggered we go up through parents till we find the one
-        // which matchs the specified selector parameter. then we run the animation.
-        document.addEventListener(eventName, function(e) {
-            var target = e.target;
-
-            // here "this" means "document"
-            while (target && target !== this) {
-                if (target.matches(selector)) {
-                    self.completedLaps = 0;
-                    self.run();
-                    return;
-                }
-                target = target.parentNode;
-            }
-        }, false);
-
-        return self;
-    }
-
-    /**
-      * at() function is the main function of the library
-      * by at() function you define at a specific time what action should runs and how long should it lasts
-      *
-      * @param {(int|int[]|float|float[])} start - a number or an array containing min and max time at which the action should start ([0, 1] means between 0 and 1 second after animation starts)
-      * @param {(int|int[]|float|float[]|string)} duration_or_templateName - a number or an array containing min and max duration of action ([.5, 1] means it should lasts between .5 to 1 second) or name of template you want to append
-      * @param {string} func - (don't provide if appending a template) name of action that you want to run at specified time (e.g moveTo or rotate)
-      * @param {...args} funcArgs - (don't provide if appending a template) other parameters required by the action
-    **/
-    joon.prototype.at = function(...args){
-        var self = this;
-
-        // if there are more than 2 parameters, it means you are adding actions (either you are defining a template or an actual animation)
-        if(arguments.length > 2){
-          return self._atAction(args);
-        }
-        // else if there are only 2 parameters, it means you want to append a pre-defined template here
-        // so we find the template and append all actions defined there to our list of actions
-        else{
-          return self._atTemplate(args);
-        }
     }
 
     /**
@@ -557,7 +506,7 @@ window.$ = window.joon = (function(){
         var self = this;
 
         var action = {
-          index: self.actionIndex++,
+          index: self._actionIndex++,
           name: func,
           status: "not-started",
           possibleArgs: funcArgs,
@@ -566,16 +515,16 @@ window.$ = window.joon = (function(){
           tweenFunc: tweenFunc
         };
 
-        if(self.isTemplate){
-          if(joon.templates[self.templateName]){
-            joon.templates[self.templateName].push(action);
+        if(self._isTemplate){
+          if(joon._templates[self._templateName]){
+            joon._templates[self._templateName].push(action);
           }
           else{
-            joon.templates[self.templateName] = [action];
+            joon._templates[self._templateName] = [action];
           }
         }
         else{
-          self.actions.push(action);
+          self._actions.push(action);
         }
 
         return self;
@@ -590,13 +539,13 @@ window.$ = window.joon = (function(){
     joon.prototype._atTemplate = function([start, templateName]){
         var self = this;
 
-        if(joon.templates[templateName]){
+        if(joon._templates[templateName]){
 
-            var templateActions = joon.templates[templateName];
+            var templateActions = joon._templates[templateName];
 
             for(var action of templateActions) {
-                self.actions.push({
-                    index: self.actionIndex++,
+                self._actions.push({
+                    index: self._actionIndex++,
                     name: action.name,
                     status: "not-started",
                     possibleArgs: action.possibleArgs,
@@ -615,68 +564,25 @@ window.$ = window.joon = (function(){
     }
 
     /**
-      * then() function allows you to set a callback function to be called after the animation is completed
-      *
-      * @param {function} func - callback function
-    **/
-    joon.prototype.then = function(func){
-        this.callback = func;
-        return this;
-    }
-
-    /**
-      * run() function is the one which triggers the animation. after you set all actions you should call run()
-      * to start the animation except when you are defining a template or want to run the animation after an event
-    **/
-    joon.prototype.run = function(){
-        var self = this;
-
-        // we should reset actions and elements' parameters in each loop of run
-        for(var action of self.actions){
-            action.status = "not-started";
-
-            for(var elm of self.elements){
-                if(!elm.actionsParameters) elm.actionsParameters = [];
-
-                elm.actionsParameters[action.index] = {
-                    // change in Values and final values should be calculated again
-                    calculated: false,
-                    // is action applied on the element
-                    applied: false,
-                    // get a random value for each parameter from provided array
-                    args: getRandomParameters(action.possibleArgs),
-                    // get a random value for duration from provided array
-                    duration: getRandomNumericParameter(action.possibleDurations, true),
-                    // get a random value for startTime from provided array
-                    startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
-                };
-            }
-        }
-
-        // now run actions
-        self._runActions();
-    }
-
-    /**
       * _runActions() function manages animation's running and loops
     **/
     joon.prototype._runActions = function(){
         var self = this;
 
         // filter actions that are not finished yet
-        var actionsToRun = self.actions.filter(a => a.status !== "completed");
+        var actionsToRun = self._actions.filter(a => a.status !== "completed");
 
         // if all actions are completed
         if(actionsToRun.length == 0){
 
-            self.completedLaps += 1;
+            self._completedLaps += 1;
 
             // call the callback function if there is any
-            if(self.callback){
-                self.callback(self.elements, self.completedLaps);
+            if(self._callback){
+                self._callback(self._elements);
             }
 
-            if(self.totalLaps == "infinite" || self.totalLaps > self.completedLaps)
+            if(self._totalLaps == "infinite" || self._totalLaps > self._completedLaps)
             {
                 self.run();
             }
@@ -689,27 +595,13 @@ window.$ = window.joon = (function(){
 
                 action.status = "in-progress";
 
-                for(var elm of self.elements){
+                for(var elm of self._elements){
                   self._apply(action, elm);
                 }
             }
 
             requestAnimationFrame(self._runActions.bind(self));
         }
-    }
-
-    /**
-      * loop() function allows you to say how many times animation should run
-      *
-      *
-      * @param {(int|string)} laps - for infinite loops send word "infinite" as parameter
-    **/
-    joon.prototype.loop = function(laps){
-        var self = this;
-
-        self.totalLaps = laps;
-
-        return self;
     }
 
     /**
@@ -764,7 +656,7 @@ window.$ = window.joon = (function(){
       * @param {object} action - the action you want to check its similar in progress actions
     **/
     joon.prototype._isSameActionInProgress = function(action){
-        var sameActionsInProgress = this.actions.filter(a => a.index != action.index && a.name === action.name && a.status === "in-progress");
+        var sameActionsInProgress = this._actions.filter(a => a.index != action.index && a.name === action.name && a.status === "in-progress");
         return sameActionsInProgress.length > 0;
     }
 
@@ -778,7 +670,7 @@ window.$ = window.joon = (function(){
     joon.prototype._updateActionStatus = function(action){
         var notCompletedElements = 0;
 
-        for(var elm of this.elements){
+        for(var elm of this._elements){
           if(elm.actionsParameters[action.index].applied === false){
             notCompletedElements += 1;
           }
@@ -788,6 +680,121 @@ window.$ = window.joon = (function(){
             action.status = "completed";
         }
     }
+
+
+
+
+    /**
+      * on() function enables you to bind start of the animation to an event
+      *
+      * @param {String} selector - elements that trigger the event like ".trigger"
+      * @param {String} eventName - name of the event like "click"
+    **/
+    joon.prototype.on = function(selector, eventName){
+        var self = this;
+
+        // here we have defined a general eventListener on document
+        // when the event is triggered we go up through parents till we find the one
+        // which matchs the specified selector parameter. then we run the animation.
+        document.addEventListener(eventName, function(e) {
+            var target = e.target;
+
+            // here "this" means "document"
+            while (target && target !== this) {
+                if (target.matches(selector)) {
+                    self._completedLaps = 0;
+                    self.run();
+                    return;
+                }
+                target = target.parentNode;
+            }
+        }, false);
+
+        return self;
+    }
+
+    /**
+      * at() function is the main function of the library
+      * by at() function you define at a specific time what action should runs and how long should it lasts
+      *
+      * @param {(int|int[]|float|float[])} start - a number or an array containing min and max time at which the action should start ([0, 1] means between 0 and 1 second after animation starts)
+      * @param {(int|int[]|float|float[]|string)} duration_or_templateName - a number or an array containing min and max duration of action ([.5, 1] means it should lasts between .5 to 1 second) or name of template you want to append
+      * @param {string} func - (don't provide if appending a template) name of action that you want to run at specified time (e.g moveTo or rotate)
+      * @param {...args} funcArgs - (don't provide if appending a template) other parameters required by the action
+    **/
+    joon.prototype.at = function(...args){
+        var self = this;
+
+        // if there are more than 2 parameters, it means you are adding actions (either you are defining a template or an actual animation)
+        if(arguments.length > 2){
+          return self._atAction(args);
+        }
+        // else if there are only 2 parameters, it means you want to append a pre-defined template here
+        // so we find the template and append all actions defined there to our list of actions
+        else{
+          return self._atTemplate(args);
+        }
+    }
+
+    /**
+      * then() function allows you to set a callback function to be called after the animation is completed
+      *
+      * @param {function} func - callback function
+    **/
+    joon.prototype.then = function(func){
+        this._callback = func;
+        return this;
+    }
+
+    /**
+      * run() function is the one which triggers the animation. after you set all actions you should call run()
+      * to start the animation except when you are defining a template or want to run the animation after an event
+    **/
+    joon.prototype.run = function(){
+        var self = this;
+
+        // we should reset actions and elements' parameters in each loop of run
+        for(var action of self._actions){
+            action.status = "not-started";
+
+            for(var elm of self._elements){
+                if(!elm.actionsParameters) elm.actionsParameters = [];
+
+                elm.actionsParameters[action.index] = {
+                    // change in Values and final values should be calculated again
+                    calculated: false,
+                    // is action applied on the element
+                    applied: false,
+                    // get a random value for each parameter from provided array
+                    args: getRandomParameters(action.possibleArgs),
+                    // get a random value for duration from provided array
+                    duration: getRandomNumericParameter(action.possibleDurations, true),
+                    // get a random value for startTime from provided array
+                    startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
+                };
+            }
+        }
+
+        // now run actions
+        self._runActions();
+    }
+
+    /**
+      * loop() function allows you to say how many times animation should run
+      *
+      *
+      * @param {(int|string)} laps - for infinite loops send word "infinite" as parameter
+    **/
+    joon.prototype.loop = function(laps){
+        var self = this;
+
+        self._totalLaps = laps;
+
+        return self;
+    }
+
+
+
 
     /**
       * getElements() function returns a list of all elements which match the specified selector
@@ -1151,6 +1158,8 @@ window.$ = window.joon = (function(){
         // on the other hand we calc the distance
         return (typeof val == "string" && hasSign(val)) ? parseFloat(val) : parseFloat(val) - initVal;
     }
+
+
 
     /**
      *  main constructor
