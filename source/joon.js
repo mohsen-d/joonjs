@@ -101,18 +101,18 @@ window.joon = (function(){
           // extract initial value of property
           if(!hasInitValue(elm, property))
           {
-              // as window.getComputedStyle().getPropertyValue() contains border-width-right, border-width-left and ...
-              // instead of border-width, we have to look for one of them instead of border-width
-              var isBorderWidth = property.toLowerCase() == "border-width";
+                // as window.getComputedStyle().getPropertyValue() contains border-width-right, border-width-left and ...
+                // instead of border-width, we have to look for one of them instead of border-width
+                var isBorderWidth = property.toLowerCase() == "border-width";
 
-              var initVal = !isBorderWidth ?
+                var initVal = !isBorderWidth ?
                             window.getComputedStyle(elm, null).getPropertyValue(property) :
                             window.getComputedStyle(elm, null).getPropertyValue("border-right-width");
 
-              elm.initialPropValue[property] = parseFloat(initVal);
+                elm.initialPropValue[property] = parseFloat(initVal);
           }
 
-          elm.changeInPropValue[property] = value - elm.initialPropValue[property];
+          elm.changeInPropValue[property] = calcChangeInValue(value, elm.initialPropValue[property]);
           elm.finalPropValue[property] = elm.initialPropValue[property] + elm.changeInPropValue[property];
         },
 
@@ -152,8 +152,8 @@ window.joon = (function(){
 
         moveTo: function(elm, t, duration, easingFunc, [x, y]){
             // calc next steps
-            var newX = getNextStep(elm.initialX, elm.changeInX, t, duration, easingFunc);
-            var newY = getNextStep(elm.initialY, elm.changeInY, t, duration, easingFunc);
+            var newX = getNextStep(elm.initialX, elm.changeInX, t, duration, getEasingFunc(easingFunc, 0));
+            var newY = getNextStep(elm.initialY, elm.changeInY, t, duration, getEasingFunc(easingFunc, 1));
 
             // apply new values
             elm.style.top = newX;
@@ -166,9 +166,9 @@ window.joon = (function(){
         },
 
         scaleTo: function(elm, t, duration, easingFunc, [x, y, z]){
-            var newX = getNextStep(elm.initialScaleX, elm.changeInScaleX, t, duration, easingFunc);
-            var newY = getNextStep(elm.initialScaleY, elm.changeInScaleY, t, duration, easingFunc);
-            var newZ = getNextStep(elm.initialScaleZ, elm.changeInScaleZ, t, duration, easingFunc);
+            var newX = getNextStep(elm.initialScaleX, elm.changeInScaleX, t, duration, getEasingFunc(easingFunc, 0));
+            var newY = getNextStep(elm.initialScaleY, elm.changeInScaleY, t, duration, getEasingFunc(easingFunc, 1));
+            var newZ = getNextStep(elm.initialScaleZ, elm.changeInScaleZ, t, duration, getEasingFunc(easingFunc, 2));
 
             setTransformFunc(elm, "scaleX", "scaleX(" + newX + ")");
             setTransformFunc(elm, "scaleY", "scaleY(" + newY + ")");
@@ -176,9 +176,9 @@ window.joon = (function(){
         },
 
         rotate: function(elm, t, duration, easingFunc, [x, y, z]){
-            var newX = getNextStep(elm.initialRotateX, elm.changeInRotateX, t, duration, easingFunc);
-            var newY = getNextStep(elm.initialRotateY, elm.changeInRotateY, t, duration, easingFunc);
-            var newZ = getNextStep(elm.initialRotateZ, elm.changeInRotateZ, t, duration, easingFunc);
+            var newX = getNextStep(elm.initialRotateX, elm.changeInRotateX, t, duration, getEasingFunc(easingFunc, 0));
+            var newY = getNextStep(elm.initialRotateY, elm.changeInRotateY, t, duration, getEasingFunc(easingFunc, 1));
+            var newZ = getNextStep(elm.initialRotateZ, elm.changeInRotateZ, t, duration, getEasingFunc(easingFunc, 2));
 
             setTransformFunc(elm, "rotateX", "rotateX(" + newX + "deg)");
             setTransformFunc(elm, "rotateY", "rotateY(" + newY + "deg)");
@@ -186,8 +186,8 @@ window.joon = (function(){
         },
 
         skew: function(elm, t, duration, easingFunc, [x, y]){
-            var newX = getNextStep(elm.initialSkewX, elm.changeInSkewX, t, duration, easingFunc);
-            var newY = getNextStep(elm.initialSkewY, elm.changeInSkewY, t, duration, easingFunc);
+            var newX = getNextStep(elm.initialSkewX, elm.changeInSkewX, t, duration, getEasingFunc(easingFunc, 0));
+            var newY = getNextStep(elm.initialSkewY, elm.changeInSkewY, t, duration, getEasingFunc(easingFunc, 1));
 
             var skew = "skew(" + newY + "deg, " + newX + "deg)";
             setTransformFunc(elm, "skew", skew);
@@ -220,14 +220,14 @@ window.joon = (function(){
         },
 
         changeBoxShadow: function(elm, t, duration, easingFunc, [x, y, blur, spread, color]){
-            var newX = getNextStep(elm.initBoxShadowX, elm.changeInBoxShadowX, t, duration, easingFunc);
-            var newY = getNextStep(elm.initBoxShadowY, elm.changeInBoxShadowY, t, duration, easingFunc);
-            var newBlur = getNextStep(elm.initBoxShadowBlur, elm.changeInBoxShadowBlur, t, duration, easingFunc);
-            var newSpread = getNextStep(elm.initBoxShadowSpread, elm.changeInBoxShadowSpread, t, duration, easingFunc);
+            var newX = getNextStep(elm.initBoxShadowX, elm.changeInBoxShadowX, t, duration, getEasingFunc(easingFunc, 0));
+            var newY = getNextStep(elm.initBoxShadowY, elm.changeInBoxShadowY, t, duration, getEasingFunc(easingFunc, 1));
+            var newBlur = getNextStep(elm.initBoxShadowBlur, elm.changeInBoxShadowBlur, t, duration, getEasingFunc(easingFunc, 2));
+            var newSpread = getNextStep(elm.initBoxShadowSpread, elm.changeInBoxShadowSpread, t, duration, getEasingFunc(easingFunc, 3));
 
-            var newRed = Math.round(getNextStep(elm.initBoxShadowColor[0], elm.changeInBoxShadowColor[0], t, duration, easingFunc));
-            var newGreen = Math.round(getNextStep(elm.initBoxShadowColor[1], elm.changeInBoxShadowColor[1], t, duration, easingFunc));
-            var newBlue = Math.round(getNextStep(elm.initBoxShadowColor[2], elm.changeInBoxShadowColor[2], t, duration, easingFunc));
+            var newRed = Math.round(getNextStep(elm.initBoxShadowColor[0], elm.changeInBoxShadowColor[0], t, duration, getEasingFunc(easingFunc, 4)));
+            var newGreen = Math.round(getNextStep(elm.initBoxShadowColor[1], elm.changeInBoxShadowColor[1], t, duration, getEasingFunc(easingFunc, 4)));
+            var newBlue = Math.round(getNextStep(elm.initBoxShadowColor[2], elm.changeInBoxShadowColor[2], t, duration, getEasingFunc(easingFunc, 4)));
 
             var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px " + newSpread +"px";
 
@@ -235,13 +235,13 @@ window.joon = (function(){
         },
 
         changeTextShadow: function(elm, t, duration, easingFunc, [x, y, blur, color]){
-            var newX = getNextStep(elm.initTextShadowX, elm.changeInTextShadowX, t, duration, easingFunc);
-            var newY = getNextStep(elm.initTextShadowY, elm.changeInTextShadowY, t, duration, easingFunc);
-            var newBlur = getNextStep(elm.initTextShadowBlur, elm.changeInTextShadowBlur, t, duration, easingFunc);
+            var newX = getNextStep(elm.initTextShadowX, elm.changeInTextShadowX, t, duration, getEasingFunc(easingFunc, 0));
+            var newY = getNextStep(elm.initTextShadowY, elm.changeInTextShadowY, t, duration, getEasingFunc(easingFunc, 1));
+            var newBlur = getNextStep(elm.initTextShadowBlur, elm.changeInTextShadowBlur, t, duration, getEasingFunc(easingFunc, 2));
 
-            var newRed = Math.round(getNextStep(elm.initTextShadowColor[0], elm.changeInTextShadowColor[0], t, duration, easingFunc));
-            var newGreen = Math.round(getNextStep(elm.initTextShadowColor[1], elm.changeInTextShadowColor[1], t, duration, easingFunc));
-            var newBlue = Math.round(getNextStep(elm.initTextShadowColor[2], elm.changeInTextShadowColor[2], t, duration, easingFunc));
+            var newRed = Math.round(getNextStep(elm.initTextShadowColor[0], elm.changeInTextShadowColor[0], t, duration, getEasingFunc(easingFunc, 3)));
+            var newGreen = Math.round(getNextStep(elm.initTextShadowColor[1], elm.changeInTextShadowColor[1], t, duration, getEasingFunc(easingFunc, 3)));
+            var newBlue = Math.round(getNextStep(elm.initTextShadowColor[2], elm.changeInTextShadowColor[2], t, duration, getEasingFunc(easingFunc, 3)));
 
             var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px";
             elm.style["text-shadow"] = newRule;
@@ -871,21 +871,28 @@ window.joon = (function(){
             var param = funcParameters[i];
 
             // if it is just a string or number and not an array then there is no choice
-            if(typeof param == "string" || typeof param == "number")
+            if(typeof param == "string" || typeof param == "number"){
                 choosenParameters[i] = param;
+                continue;
+            }
 
             // if it is a function then
             //  we invoke it and use the result as parameter value
-            if(typeof param == "function")
+            if(typeof param == "function"){
                 choosenParameters[i] = param();
+                continue;
+            }
 
             // if it is an array of strings we should choose one of its values randomly
-            if(typeof param[0] == "string")
+            if(typeof param[0] == "string"){
                 choosenParameters[i] = getRandomStringParameter(param);
+                continue;
+            }
 
             // if it is an array of numbers we should choose a number from the given range
-            if(typeof param[0] == "number")
+            if(typeof param[0] == "number"){
                 choosenParameters[i] = getRandomNumericParameter(param, true);
+            }
         }
 
         return choosenParameters;
@@ -899,7 +906,7 @@ window.joon = (function(){
       * @return {string}  choosen string
     **/
     function getRandomStringParameter(availValues){
-        var randomIndex = getRandomInteger(0, availValues.length - 1);
+        var randomIndex = getRandomNumericParameter([0, availValues.length - 1], false);
 
         return availValues[randomIndex];
     }
@@ -1128,7 +1135,7 @@ window.joon = (function(){
       * @return {bool} true if it has a sign , false if not
     **/
     function hasSign(param){
-        return param.indexOf("+") > -1 || param.indexOf("-") > -1;
+        return ["+", "-", "*", "/"].some(s => param.indexOf(s) > -1);
     }
 
     /**
@@ -1153,12 +1160,27 @@ window.joon = (function(){
       * @return {(int|float)} change in value
     **/
     function calcChangeInValue(val, initVal){
-        // if the val is of type string and has a sign ("+10") it means that it contains the amount of change we want
+        // if the val is of type string and has a + or - sign it means that it contains the amount of change we want
         // so we just parse it
-        // on the other hand we calc the distance
-        return (typeof val == "string" && hasSign(val)) ? parseFloat(val) : parseFloat(val) - initVal;
+        if(typeof val == "string" && hasSign(val)){
+            if(val.startsWith("+") || val.startsWith("-")){
+                return parseFloat(val);
+            }
+            else{
+                // but if it has * or / signs we should do the math e.g 2*5 - 2
+                return eval(initVal + val) - initVal;
+            }
+        }
+        else{
+            // on the other hand we calc the distance
+            return parseFloat(val) - initVal;
+        }
     }
 
+    function getEasingFunc(possibleEasingFuncs, index){
+        if(typeof possibleEasingFuncs === "function") return possibleEasingFuncs;
+        return possibleEasingFuncs[index] != undefined ? possibleEasingFuncs[index] : possibleEasingFuncs[possibleEasingFuncs.length - 1];
+    }
 
 
     /**
