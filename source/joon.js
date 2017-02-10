@@ -19,6 +19,10 @@ window.joon = (function(){
           self._completedLaps = 0;
           // index of action in the list of actions
           self._actionIndex = 0;
+          // whether animation started
+          self._started = false;
+          // whether animation is paused
+          self._paused = false;
         }
 
         // all of the actions defined on selected elements
@@ -26,7 +30,7 @@ window.joon = (function(){
 
         self.name = "joon.js";
         self.description = "a js animation library";
-        self.author = "Mohsen Dorparasti";
+        self.author = "Mohsen Dorparasti <dorparasti[at]gmail.com>";
     }
 
     // all of the templates defined by you
@@ -564,10 +568,48 @@ window.joon = (function(){
     }
 
     /**
-      * _runActions() function manages animation's running and loops
+      * _run() function is the one which prepare actions in each loop.
+    **/
+    joon.prototype._run = function(){
+        var self = this;
+
+        // we should reset actions and elements' parameters in each loop of run
+        for(var action of self._actions){
+            action.status = "not-started";
+
+            for(var elm of self._elements){
+                if(!elm.actionsParameters) elm.actionsParameters = [];
+
+                elm.actionsParameters[action.index] = {
+                    // change in Values and final values should be calculated again
+                    calculated: false,
+                    // is action applied on the element
+                    applied: false,
+                    // get a random value for each parameter from provided array
+                    args: getRandomParameters(action.possibleArgs),
+                    // get a random value for duration from provided array
+                    duration: getRandomNumericParameter(action.possibleDurations, true),
+                    // get a random value for startTime from provided array
+                    startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
+                };
+            }
+        }
+
+        // now run actions
+        self._runActions();
+    }
+
+    /**
+      * _runActions() function manages animation's actions running and loops
     **/
     joon.prototype._runActions = function(){
         var self = this;
+
+        // do nothing if animation is paused
+        if(self._paused){
+            requestAnimationFrame(self._runActions.bind(self));
+            return;
+        }
 
         // filter actions that are not finished yet
         var actionsToRun = self._actions.filter(a => a.status !== "completed");
@@ -584,8 +626,11 @@ window.joon = (function(){
 
             if(self._totalLaps == "infinite" || self._totalLaps > self._completedLaps)
             {
-                self.run();
+                self._run();
             }
+
+            // animation is finished and ready to start again ;-)
+            self._started = false;
         }
         else{
             for(var action of actionsToRun) {
@@ -685,30 +730,51 @@ window.joon = (function(){
 
 
     /**
-      * on() function enables you to bind start of the animation to an event
+      * startOn() function enables you to bind start of the animation to an event
       *
       * @param {String} selector - elements that trigger the event like ".trigger"
       * @param {String} eventName - name of the event like "click"
     **/
-    joon.prototype.on = function(selector, eventName){
+    joon.prototype.startOn = function(selector, eventName){
         var self = this;
 
-        // here we have defined a general eventListener on document
-        // when the event is triggered we go up through parents till we find the one
-        // which matchs the specified selector parameter. then we run the animation.
-        document.addEventListener(eventName, function(e) {
-            var target = e.target;
-
-            // here "this" means "document"
-            while (target && target !== this) {
-                if (target.matches(selector)) {
-                    self._completedLaps = 0;
-                    self.run();
-                    return;
-                }
-                target = target.parentNode;
+        addEventListener(selector, eventName, function() {
+            if(!self._started){
+                self.start();
             }
-        }, false);
+        });
+
+        return self;
+    }
+
+    /**
+      * pauseOn() function binds pause of the animation to an event
+      *
+      * @param {String} selector - elements that trigger the event like ".trigger"
+      * @param {String} eventName - name of the event like "click"
+    **/
+    joon.prototype.pauseOn = function(selector, eventName){
+        var self = this;
+
+        addEventListener(selector, eventName, function() {
+            self.pause();
+        });
+
+        return self;
+    }
+
+    /**
+      * resumeOn() function enables you to bind resume of the animation to an event
+      *
+      * @param {String} selector - elements that trigger the event like ".trigger"
+      * @param {String} eventName - name of the event like "click"
+    **/
+    joon.prototype.resumeOn = function(selector, eventName){
+        var self = this;
+
+        addEventListener(selector, eventName, function() {
+            self.resume();
+        });
 
         return self;
     }
@@ -719,13 +785,15 @@ window.joon = (function(){
       *
       * @param {(int|int[]|float|float[])} start - a number or an array containing min and max time at which the action should start ([0, 1] means between 0 and 1 second after animation starts)
       * @param {(int|int[]|float|float[]|string)} duration_or_templateName - a number or an array containing min and max duration of action ([.5, 1] means it should lasts between .5 to 1 second) or name of template you want to append
+      * @param {(function|function[])} easingFunc - (don't provide if appending a template) easing function(s). you can provide one easing function to be used for all parameters or send different easing functions for each parameter (e.g linear for x and easeInSine for y)
       * @param {string} func - (don't provide if appending a template) name of action that you want to run at specified time (e.g moveTo or rotate)
       * @param {...args} actionParams - (don't provide if appending a template) other parameters required by the action
     **/
     joon.prototype.at = function(...params){
         var self = this;
 
-        // if there are more than 2 parameters, it means you are adding actions (either you are defining a template or an actual animation)
+        // if there are more than 2 parameters,
+        // it means you are adding actions (either you are defining a template or an actual animation)
         if(arguments.length > 2){
           return self._addAction(params);
         }
@@ -747,39 +815,6 @@ window.joon = (function(){
     }
 
     /**
-      * run() function is the one which triggers the animation. after you set all actions you should call run()
-      * to start the animation except when you are defining a template or want to run the animation after an event
-    **/
-    joon.prototype.run = function(){
-        var self = this;
-
-        // we should reset actions and elements' parameters in each loop of run
-        for(var action of self._actions){
-            action.status = "not-started";
-
-            for(var elm of self._elements){
-                if(!elm.actionsParameters) elm.actionsParameters = [];
-
-                elm.actionsParameters[action.index] = {
-                    // change in Values and final values should be calculated again
-                    calculated: false,
-                    // is action applied on the element
-                    applied: false,
-                    // get a random value for each parameter from provided array
-                    args: getRandomParameters(action.possibleArgs),
-                    // get a random value for duration from provided array
-                    duration: getRandomNumericParameter(action.possibleDurations, true),
-                    // get a random value for startTime from provided array
-                    startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
-                };
-            }
-        }
-
-        // now run actions
-        self._runActions();
-    }
-
-    /**
       * loop() function allows you to say how many times animation should run
       *
       *
@@ -791,6 +826,43 @@ window.joon = (function(){
         self._totalLaps = laps;
 
         return self;
+    }
+
+    /**
+      * start() function starts the animation. after you defined all actions using at() and are not willing to use events
+      * then you should call start() at the end
+    **/
+    joon.prototype.start = function(){
+        var self = this;
+        self._completedLaps = 0;
+        self._run();
+        self._started = true;
+    }
+
+    /**
+      * pause() function
+    **/
+    joon.prototype.pause = function(){
+        this._paused = true;
+        this._pausedAt = Date.now();
+    }
+
+    /**
+      * resume() function
+    **/
+    joon.prototype.resume = function(){
+        var self = this;
+
+        // in order to resume animation from where it has stoped we should
+        // recalc the actions startTime
+        for(var action of self._actions){
+            for(var elm of self._elements){
+                var currentStartTime = elm.actionsParameters[action.index].startTime;
+                elm.actionsParameters[action.index].startTime = Date.now() - (self._pausedAt - currentStartTime);
+            }
+        }
+
+        self._paused = false;
     }
 
 
@@ -1177,11 +1249,44 @@ window.joon = (function(){
         }
     }
 
+    /**
+      * getEasingFunc() returns the easing function provided for a certain parameter
+      *
+      * @param {(function|function[])} possibleEasingFuncs - array of easing functions
+      * @param {int} index - index of parameter
+      * @return {function} the easing function
+    **/
     function getEasingFunc(possibleEasingFuncs, index){
+        // if there is only one function
         if(typeof possibleEasingFuncs === "function") return possibleEasingFuncs;
+        // else check for the index in the array
         return possibleEasingFuncs[index] != undefined ? possibleEasingFuncs[index] : possibleEasingFuncs[possibleEasingFuncs.length - 1];
     }
 
+    /**
+      * addEventListener() function
+      *
+      * @param {(string|object)} selector - elements you want to add eventListener to (".trigger" or document)
+      * @param {string} eventName - name of event (like "click")
+      * @param {function} func function to run when event triggered
+    **/
+    function addEventListener(selector, eventName, func){
+
+        if(selector === document){
+            document.addEventListener(eventName, function(e) {
+                func();
+            });
+            return;
+        }
+
+        var elms = document.querySelectorAll(selector);
+        for(var elm of elms){
+            elm.addEventListener(eventName, function(e) {
+                e.stopPropagation();
+                func();
+            });
+        }
+    }
 
     /**
      *  main constructor
