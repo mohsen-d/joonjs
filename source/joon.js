@@ -735,10 +735,10 @@ window.joon = (function(){
       * @param {String} selector - elements that trigger the event like ".trigger"
       * @param {String} eventName - name of the event like "click"
     **/
-    joon.prototype.startOn = function(selector, eventName){
+    joon.prototype.startOn = function(selector, eventName, context = "body"){
         var self = this;
 
-        addEventListener(selector, eventName, function() {
+        addEventListener(context, selector, eventName, function() {
             if(!self._started){
                 self.start();
             }
@@ -753,10 +753,10 @@ window.joon = (function(){
       * @param {String} selector - elements that trigger the event like ".trigger"
       * @param {String} eventName - name of the event like "click"
     **/
-    joon.prototype.pauseOn = function(selector, eventName){
+    joon.prototype.pauseOn = function(selector, eventName, context = "body"){
         var self = this;
 
-        addEventListener(selector, eventName, function() {
+        addEventListener(context, selector, eventName, function() {
             self.pause();
         });
 
@@ -769,10 +769,10 @@ window.joon = (function(){
       * @param {String} selector - elements that trigger the event like ".trigger"
       * @param {String} eventName - name of the event like "click"
     **/
-    joon.prototype.resumeOn = function(selector, eventName){
+    joon.prototype.resumeOn = function(selector, eventName, context = "body"){
         var self = this;
 
-        addEventListener(selector, eventName, function() {
+        addEventListener(context, selector, eventName, function() {
             self.resume();
         });
 
@@ -1270,7 +1270,7 @@ window.joon = (function(){
       * @param {string} eventName - name of event (like "click")
       * @param {function} func function to run when event triggered
     **/
-    function addEventListener(selector, eventName, func){
+    function addEventListener(context, selector, eventName, func){
 
         if(selector === document){
             document.addEventListener(eventName, function(e) {
@@ -1279,13 +1279,22 @@ window.joon = (function(){
             return;
         }
 
-        var elms = document.querySelectorAll(selector);
-        for(var elm of elms){
-            elm.addEventListener(eventName, function(e) {
-                e.stopPropagation();
-                func();
-            });
-        }
+        // here we have defined a general eventListener on the provided context
+        // when the event is triggered we go up through parents till we find the one
+        // which matchs the specified selector parameter. then we run the animation.
+        document.querySelector(context).addEventListener(eventName, function(e) {
+            var target = e.target;
+
+            // here "this" means the context
+            while (target && target !== this) {
+                if (target.matches(selector)) {
+                    e.stopPropagation();
+                    func();
+                    return;
+                }
+                target = target.parentNode;
+            }
+        }, false);
     }
 
     /**
