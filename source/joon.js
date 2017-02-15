@@ -1,3 +1,17 @@
+/**
+ * joon.js v 1.0.0
+ *
+ * a javascript animation library
+ *
+ * Copyright 2017, Mohsen Dorparasti <dorparasti@gmail.com>
+ * http://dorparasti.ir
+ *
+ *
+ * Released under the MIT Licence
+ * http://opensource.org/licenses/MIT
+ *
+ * Github: https://github.com/mohsen-d/joonjs
+ */
 window.joon = (function(){
     'use strict';
 
