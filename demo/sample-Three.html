@@ -1,0 +1,132 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+  body{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background-color: #fff;
+    font-family: tahoma;
+  }
+.container{
+      width: 200px;
+      height: 200px;
+      margin: 50px 10px;
+      border-bottom: solid 1px #ccc;
+      position: relative;
+      display: inline-block;
+  }
+  .box{
+      background-color: #FF004C;
+      width: 50px;
+      height: 50px;
+      position: relative;
+      top: 160px;
+      margin: auto;
+      cursor: pointer;
+      z-index: 1;
+  }
+  .box:hover{
+      background-color: #CE102D;
+  }
+  .shadow{
+      background-color: #999;
+      position: absolute;;
+      height: 6px;
+      width: 52px;
+      margin-left: 74px;
+      top: 205px;
+      z-index: 0;
+  }
+  #fast-move-container{
+      width: 400px;
+  }
+  #fast-move-box{
+      margin-left: 10px;
+  }
+  #curve-move-container{
+      width: 400px;
+  }
+  #curve-move-box{
+      left: 10px;
+      margin: 0;
+      border-radius: 50%;
+  }
+  #jump-closer-box{
+      top: 100px;
+      border-radius: 50%;
+  }
+  #jump-closer-box-shadow{
+      opacity: .5;
+      border-radius: 50%;
+  }
+  </style>
+</head>
+<body>
+
+    <div id="jump-container" class="container">
+        <div id="jump-box" class="box"></div>
+        <div id="jump-box-shadow" class="shadow"></div>
+    </div>
+
+    <div id="fast-move-container" class="container">
+        <div id="fast-move-box" class="box fast-move-box-left"></div>
+    </div>
+
+    <div id="curve-move-container" class="container">
+        <div id="curve-move-box" class="box curve-move-box-left"></div>
+    </div>
+
+    <div id="jump-closer-container" class="container">
+        <div id="jump-closer-box" class="box"></div>
+        <div id="jump-closer-box-shadow" style="transform: scaleX(.8)"  class="shadow"></div>
+    </div>
+
+    <!-- scripts -->
+    <script src="../source/bowser.js"></script>
+    <script src="../source/tweens.js"></script>
+    <script src="../source/joon.js"></script>
+    <script src="sample-three.js"></script>
+    <script>
+
+        joon("#jump-box")
+            .startOn("#jump-box", "click")
+            .at(0, "jump");
+
+        joon("#jump-box-shadow")
+            .startOn("#jump-box", "click")
+            .at(0, "jump-shadow");
+
+        joon("#fast-move-box")
+            .startOn(".fast-move-box-left", "click")
+            .at(0, "fast-move-left")
+            .then(function(){
+                document.getElementById("fast-move-box").className = "box fast-move-box-right";
+            });
+
+        joon("#fast-move-box")
+            .startOn(".fast-move-box-right", "click")
+            .at(0, "fast-move-right")
+            .then(function(){
+                document.getElementById("fast-move-box").className = "box fast-move-box-left";
+            });
+
+        joon("#curve-move-box")
+            .startOn("#curve-move-box", "click")
+            .pauseOn(document, "dblclick")
+            .resumeOn("#curve-move-box", "dblclick")
+            .at(0, "curve-move-left");
+
+        joon("#jump-closer-box")
+            .startOn("#jump-closer-box", "click")
+            .at(0, "jump-closer");
+
+        joon("#jump-closer-box-shadow")
+            .startOn("#jump-closer-box", "click")
+            .at(0, "jump-closer-shadow");
+
+
+    </script>
+</body>
+</html>
