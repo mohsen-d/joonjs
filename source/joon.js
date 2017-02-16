@@ -1,3 +1,17 @@
+/**
+ * joon.js v 1.0.0
+ *
+ * a javascript animation library
+ *
+ * Copyright 2017, Mohsen Dorparasti <dorparasti@gmail.com>
+ * http://dorparasti.ir
+ *
+ *
+ * Released under the MIT Licence
+ * http://opensource.org/licenses/MIT
+ *
+ * Github: https://github.com/mohsen-d/joonjs
+ */
 window.joon = (function(){
     'use strict';
 
@@ -87,18 +101,33 @@ window.joon = (function(){
         },
 
         changeColor: function(elm, [property, value]){
-          // extract rgb equivalent of element's initial color
-          if(!elm.initialRgbColor)
+
+          // extract element's initial rgb color
+          if(!hasInitValue(elm, property))
           {
-              // this is an array containing [red, green, blue] values of initial rgb color
-              elm.initialRgbColor = extractRgb(window.getComputedStyle(elm, null).getPropertyValue(property));
+              var initValue = window.getComputedStyle(elm, null).getPropertyValue(property);
+
+              console.log(initValue);
+              // if the property is not defined, set all initial color as white
+              if(isEmpty(initValue)){
+                  elm.initialPropRgbColor[property] = [255, 255, 255];
+              }
+              // else extract values by usign regex
+              // structure is : rgb(red, green, blue)
+              else{
+                  var regex = new RegExp("\\((.*)\\, (.*)\\, (.*)\\)", "i");
+                  var initValues = initValue.match(regex);
+                  elm.initialPropRgbColor[property] = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
+              }
           }
 
+          console.log(elm.initialPropRgbColor[property]);
+
           // this is an array containing [red, green, blue] values of final rgb color
-          elm.finalRgbColor = hexToRgb(value);
+          elm.finalPropRgbColor[property] = value;
 
           // this is an array containing [red, green, blue] distance between initial color and final color
-          elm.changeInRgbColor = calcRgbDistance(elm.initialRgbColor, elm.finalRgbColor);
+          elm.changeInPropRgbColor[property] = calcRgbDistance(elm.initialPropRgbColor[property], elm.finalPropRgbColor[property]);
         },
 
         change: function(elm, [property, value]){
@@ -198,12 +227,12 @@ window.joon = (function(){
         },
 
         changeColor: function(elm, t, duration, easingFunc, [property, value]){
-            var newRed = Math.round(getNextStep(elm.initialRgbColor[0], elm.changeInRgbColor[0], t, duration, easingFunc));
-            var newGreen = Math.round(getNextStep(elm.initialRgbColor[1], elm.changeInRgbColor[1], t, duration, easingFunc));
-            var newBlue = Math.round(getNextStep(elm.initialRgbColor[2], elm.changeInRgbColor[2], t, duration, easingFunc));
+            var newRed = Math.round(getNextStep(elm.initialPropRgbColor[property][0], elm.changeInPropRgbColor[property][0], t, duration, easingFunc));
+            var newGreen = Math.round(getNextStep(elm.initialPropRgbColor[property][1], elm.changeInPropRgbColor[property][1], t, duration, easingFunc));
+            var newBlue = Math.round(getNextStep(elm.initialPropRgbColor[property][2], elm.changeInPropRgbColor[property][2], t, duration, easingFunc));
 
-            var newRgbColor = [newRed, newGreen, newBlue];
-            elm.style[property] = rgbToHex(newRgbColor);
+            var newRgbColor = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ")";
+            elm.style[property] = newRgbColor;
         },
 
         change: function(elm, t, duration, easingFunc, [property, value]){
@@ -296,8 +325,8 @@ window.joon = (function(){
         },
 
         changeColor: function(elm, [property, value]){
-            elm.style[property] = elm.finalRgbColor;
-            elm.initialRgbColor = elm.finalRgbColor;
+            elm.style[property] = "rgb(" + elm.finalPropRgbColor[property][0] + ", " + elm.finalPropRgbColor[property][1] + ", " + elm.finalPropRgbColor[property][2] + ")";
+            elm.initialPropRgbColor[property] = elm.finalPropRgbColor[property];
         },
 
         change: function(elm, [property, value]){
@@ -475,6 +504,14 @@ window.joon = (function(){
             elm.initialPropValue = [];
             elm.changeInPropValue = [];
             elm.finalPropValue = [];
+        },
+
+        changeColor: function(elm){
+            // we extract initial value in _actionsCalculationFunctions()
+            // because we need parameters like properyName to get the value
+            elm.initialPropRgbColor = [];
+            elm.changeInPropRgbColor = [];
+            elm.finalPropRgbColor = [];
         }
     };
 
@@ -901,7 +938,7 @@ window.joon = (function(){
 
     /**
       * hasInitValue() function check if the initial value for the property is calculated or not
-      * it is a helper function for change() function
+      * it is a helper function for change() and changeColor() function
       *
       *
       * @param {object} elm - the element
@@ -909,7 +946,9 @@ window.joon = (function(){
       * @return {bool}  true if has initial value , false if not
     **/
     function hasInitValue(elm, prop){
-        return !isEmpty(elm.initialPropValue[prop]);
+        var x = !isEmpty(elm.initialPropValue[prop]) || !isEmpty(elm.initialPropRgbColor[prop]);
+        console.log(x);
+        return x;
     }
 
     /**
