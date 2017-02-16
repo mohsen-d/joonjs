@@ -1,0 +1,20 @@
+{
+  "name": "joonjs",
+  "version": "1.0.0",
+  "description": "a js animation library",
+  "main": "source/joon.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mohsen dorparasti <dorparasti@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-jshint": "^2.0.4",
+    "jshint": "^2.9.4",
+    "jshint-stylish": "^2.2.1"
+  }
+}

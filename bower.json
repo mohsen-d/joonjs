@@ -5,9 +5,9 @@
     "mohsen dorparasti <dorparasti@gmail.com>"
   ],
   "description": "a js animation library",
-  "main": "joon.js",
+  "main": "source/joon.js",
   "keywords": [
-    "source/joon.js",
+    "joon.js",
     "javascript",
     "library",
     "animation",

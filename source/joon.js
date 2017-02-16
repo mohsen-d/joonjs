@@ -146,7 +146,7 @@ window.joon = (function(){
           elm.finalTextShadowSpread = elm.initTextShadowSpread + elm.changeInTextShadowSpread;
           elm.finalTextShadowColor = [elm.initTextShadowColor[0] + elm.changeInTextShadowColor[0], elm.initTextShadowColor[1] + elm.changeInTextShadowColor[1], elm.initTextShadowColor[2] + elm.changeInTextShadowColor[2]];
         }
-    }
+    };
 
     /**
     * functions which do the calculations for each step of each animation
@@ -250,7 +250,7 @@ window.joon = (function(){
             var newRule = "rgb(" + newRed + ", " + newGreen + ", " + newBlue + ") " + newX + "px " + newY + "px " + newBlur + "px";
             elm.style["text-shadow"] = newRule;
         }
-    }
+    };
 
     /**
     * functions which finalize the animation
@@ -338,7 +338,7 @@ window.joon = (function(){
             var finalRule = "rgb(" + elm.finalTextShadowColor[0] + ", " + elm.finalTextShadowColor[1] + ", " + elm.finalTextShadowColor[2] + ") " + elm.finalTextShadowX + "px " + elm.finalTextShadowY + "px " + elm.finalTextShadowBlur + "px";
             elm.style["text-shadow"] = finalRule;
         }
-    }
+    };
 
     /**
     * functions which will be called once at the beginning of animation to get initial values of elements'
@@ -476,7 +476,7 @@ window.joon = (function(){
             elm.changeInPropValue = [];
             elm.finalPropValue = [];
         }
-    }
+    };
 
     /**
       * _init() function is called in the constructor and calls all functions defined in _initFunctions
@@ -496,7 +496,7 @@ window.joon = (function(){
           }
         }
         return self;
-    }
+    };
 
     /**
       * _addAction() function adds actions to the animation/template actions list
@@ -532,7 +532,7 @@ window.joon = (function(){
         }
 
         return self;
-    }
+    };
 
     /**
       * _appendTemplateActions() function adds actions defined in the given template to the actions list of current animation
@@ -565,7 +565,7 @@ window.joon = (function(){
         }
 
         return self;
-    }
+    };
 
     /**
       * _run() function is the one which prepare actions in each loop.
@@ -597,7 +597,7 @@ window.joon = (function(){
 
         // now run actions
         self._runActions();
-    }
+    };
 
     /**
       * _runActions() function manages animation's actions running and loops
@@ -615,7 +615,7 @@ window.joon = (function(){
         var actionsToRun = self._actions.filter(a => a.status !== "completed");
 
         // if all actions are completed
-        if(actionsToRun.length == 0){
+        if(actionsToRun.length === 0){
 
             self._completedLaps += 1;
 
@@ -647,7 +647,7 @@ window.joon = (function(){
 
             requestAnimationFrame(self._runActions.bind(self));
         }
-    }
+    };
 
     /**
       * _apply() function manages steps of animations
@@ -692,7 +692,7 @@ window.joon = (function(){
             // if all elements has completed this action, then set action as completed
             self._updateActionStatus(action);
         }
-    }
+    };
 
     /**
       * _isSameActionInProgress() function checks if another action of the same type is already in progress
@@ -703,7 +703,7 @@ window.joon = (function(){
     joon.prototype._isSameActionInProgress = function(action){
         var sameActionsInProgress = this._actions.filter(a => a.index != action.index && a.name === action.name && a.status === "in-progress");
         return sameActionsInProgress.length > 0;
-    }
+    };
 
     /**
       * _updateActionStatus() function checks if the action is applied to all elements.if so, then
@@ -721,10 +721,10 @@ window.joon = (function(){
           }
         }
 
-        if(notCompletedElements == 0){
+        if(notCompletedElements === 0){
             action.status = "completed";
         }
-    }
+    };
 
 
 
@@ -745,7 +745,7 @@ window.joon = (function(){
         });
 
         return self;
-    }
+    };
 
     /**
       * pauseOn() function binds pause of the animation to an event
@@ -761,7 +761,7 @@ window.joon = (function(){
         });
 
         return self;
-    }
+    };
 
     /**
       * resumeOn() function enables you to bind resume of the animation to an event
@@ -777,7 +777,7 @@ window.joon = (function(){
         });
 
         return self;
-    }
+    };
 
     /**
       * at() function is the main function of the library
@@ -802,7 +802,7 @@ window.joon = (function(){
         else{
           return self._appendTemplateActions(params);
         }
-    }
+    };
 
     /**
       * then() function allows you to set a callback function to be called after the animation is completed
@@ -812,7 +812,7 @@ window.joon = (function(){
     joon.prototype.then = function(func){
         this._callback = func;
         return this;
-    }
+    };
 
     /**
       * loop() function allows you to say how many times animation should run
@@ -826,7 +826,7 @@ window.joon = (function(){
         self._totalLaps = laps;
 
         return self;
-    }
+    };
 
     /**
       * start() function starts the animation. after you defined all actions using at() and are not willing to use events
@@ -837,7 +837,7 @@ window.joon = (function(){
         self._completedLaps = 0;
         self._run();
         self._started = true;
-    }
+    };
 
     /**
       * pause() function
@@ -845,7 +845,7 @@ window.joon = (function(){
     joon.prototype.pause = function(){
         this._paused = true;
         this._pausedAt = Date.now();
-    }
+    };
 
     /**
       * resume() function
@@ -863,7 +863,7 @@ window.joon = (function(){
         }
 
         self._paused = false;
-    }
+    };
 
 
 
@@ -933,7 +933,7 @@ window.joon = (function(){
       * @return {object[]}  an array of choosen values for each parameter
     **/
     function getRandomParameters(funcParameters){
-        if(!funcParameters || funcParameters.length == 0){
+        if(!funcParameters || funcParameters.length === 0){
             return undefined;
         }
 
@@ -1221,7 +1221,7 @@ window.joon = (function(){
       * @return {(int|float)} next value
     **/
     function getNextStep(initValue, changeInValue, t, duration, easingFunc){
-        return changeInValue != 0 ? easingFunc(t, initValue, changeInValue, duration * 1000) : initValue;
+        return changeInValue !== 0 ? easingFunc(t, initValue, changeInValue, duration * 1000) : initValue;
     }
 
     /**
@@ -1260,7 +1260,7 @@ window.joon = (function(){
         // if there is only one function
         if(typeof possibleEasingFuncs === "function") return possibleEasingFuncs;
         // else check for the index in the array
-        return possibleEasingFuncs[index] != undefined ? possibleEasingFuncs[index] : possibleEasingFuncs[possibleEasingFuncs.length - 1];
+        return possibleEasingFuncs[index] !== undefined ? possibleEasingFuncs[index] : possibleEasingFuncs[possibleEasingFuncs.length - 1];
     }
 
     /**
