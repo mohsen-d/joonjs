@@ -543,18 +543,8 @@ window.joon = (function(){
       * @param {string} actionName - (don't provide if appending a template) name of action that you want to run at specified time (e.g moveTo or rotate)
       * @param {...args} actionParams - (don't provide if appending a template) other parameters required by the action
     **/
-    joon.prototype._addAction = function([start, duration, easingFunc, actionName, ...actionParams]){
+    joon.prototype._addAction = function(action){
         var self = this;
-
-        var action = {
-          index: self._actionIndex++,
-          name: actionName,
-          status: "not-started",
-          possibleArgs: actionParams,
-          possibleStarts: start,
-          possibleDurations: duration,
-          easingFunc: easingFunc
-        };
 
         if(self._isTemplate){
           if(joon._templates[self._templateName]){
@@ -596,6 +586,7 @@ window.joon = (function(){
                     // then the actual start time of the action would be second 3
                     possibleStarts: RangeSum(action.possibleStarts, start),
                     possibleDurations: action.possibleDurations,
+                    precedentActionIndex: action.precedentActionIndex,
                     easingFunc: action.easingFunc
                 });
             }
@@ -625,10 +616,26 @@ window.joon = (function(){
                     // get a random value for each parameter from provided array
                     args: getRandomParameters(action.possibleArgs),
                     // get a random value for duration from provided array
-                    duration: getRandomNumericParameter(action.possibleDurations, true),
-                    // get a random value for startTime from provided array
-                    startTime: Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
+                    duration: getRandomNumericParameter(action.possibleDurations, true)
                 };
+
+                console.log(action);
+
+                if(!isEmpty(action.possibleStarts)){
+                    console.log("its own start-time")
+                    // get a random value for startTime from provided array
+                    elm.actionsParameters[action.index].startTime = Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
+                }
+                else if (!isEmpty(action.precedentActionIndex)) {
+                    var precedentAction = self._actions[action.precedentActionIndex];
+
+                    console.log("dependent");
+                    console.log("parent : " + elm.actionsParameters[precedentAction.index].startTime + " + " + elm.actionsParameters[precedentAction.index].duration);
+
+                    elm.actionsParameters[action.index].startTime = elm.actionsParameters[precedentAction.index].startTime + elm.actionsParameters[precedentAction.index].duration * 1000;
+
+                    console.log("self : " + elm.actionsParameters[action.index].startTime);
+                }
             }
         }
 
@@ -763,6 +770,20 @@ window.joon = (function(){
         }
     };
 
+    joon.prototype._createAction = function([start, duration, easingFunc, actionName, ...actionParams]){
+        var self = this;
+
+        return {
+          index: self._actionIndex++,
+          name: actionName,
+          status: "not-started",
+          possibleArgs: actionParams,
+          possibleDurations: duration,
+          possibleStarts: start,
+          precedentActionIndex: null,
+          easingFunc: easingFunc
+        };
+    }
 
 
 
@@ -832,21 +853,40 @@ window.joon = (function(){
         // if there are more than 2 parameters,
         // it means you are adding actions (either you are defining a template or an actual animation)
         if(arguments.length > 2){
-          return self._addAction(params);
+            var action = self._createAction(params);
+            return self._addAction(action);
+        }
+        // else if there are only 2 parameters, it means you want to append a pre-defined template here
+        // so we find the template and append all actions defined there to our list of actions
+        else{
+            return self._appendTemplateActions(params);
+        }
+    };
+
+    joon.prototype.then = function(...params){
+        var self = this;
+
+        // if there are more than 2 parameters,
+        // it means you are adding actions (either you are defining a template or an actual animation)
+        if(arguments.length > 2){
+            var action = self._createAction(params);
+            action.possibleStarts = null;
+            action.precedentActionIndex = arguments[0];
+            return self._addAction(action);
         }
         // else if there are only 2 parameters, it means you want to append a pre-defined template here
         // so we find the template and append all actions defined there to our list of actions
         else{
           return self._appendTemplateActions(params);
         }
-    };
+    }
 
     /**
-      * then() function allows you to set a callback function to be called after the animation is completed
+      * finally() function allows you to set a callback function to be called after the animation is completed
       *
       * @param {function} func - callback function
     **/
-    joon.prototype.then = function(func){
+    joon.prototype.finally = function(func){
         this._callback = func;
         return this;
     };
@@ -1165,6 +1205,8 @@ window.joon = (function(){
       * @return {(int[]|float[])} the modified range
     **/
     function RangeSum(range, number){
+        if(isEmpty(range)) return null;
+
         if(typeof range == "number") return range + number;
         else return [range[0] + number, range[1] + number];
     }
