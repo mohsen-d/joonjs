@@ -1,0 +1,75 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+  body{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background-color: #fff;
+    font-family: tahoma;
+  }
+  h1{
+      text-align: center;
+      color: #ccc;
+      margin: 20px auto;
+      padding: 0;
+  }
+  #container{
+      width: 450px;
+      height: 450px;
+      margin: auto;
+  }
+  .genre{
+      position: relative;
+      display: inline-block;
+      float: left;
+      width:140px;
+      height: 80px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      background-color: #EFEFEF;
+      border: solid 1px #CCC;
+      color: #444;
+      text-align: center;
+      padding-top: 60px;
+  }
+
+  </style>
+</head>
+<body>
+
+    <h1>Movie Genres</h1>
+
+    <div id="container">
+        <div class="genre" id="classic">Classics</div>
+        <div class="genre">Western</div>
+        <div class="genre">Si-fi</div>
+        <div class="genre">Fantasy</div>
+        <div class="genre">Horror</div>
+        <div class="genre">Adventure</div>
+        <div class="genre">Comedy</div>
+        <div class="genre">Action</div>
+        <div class="genre">Martial Arts</div>
+    </div>
+
+    <!-- scripts -->
+    <script src="../bower_components/bowser/src/bowser.js"></script>
+    <script src="../source/tweens.js"></script>
+    <script src="../source/joon.js"></script>
+    <script>
+
+    joon("#classic")
+        .startOn("#container", "click")
+        .at([0, .5], [.3, .5], easeOutCirc, "scaleTo", 1.5, 1.5, 1)
+        .then(0, .5, easeOutCirc, "moveTo", [-70, 70], [-70, 70])
+        .then(1, .2, easeInSine, "fadeTo", 0);
+
+    joon(".genre")
+        .startOn(document, "dblclick")
+        .at([0, .5], .2, easeOutQuart, "fadeTo", 1)
+        .at([.2, 1.2], .5, easeOutQuart, "scaleTo", 1, 1, 1);
+
+    </script>
+</body>
+</html>

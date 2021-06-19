@@ -10,47 +10,151 @@
     background-color: #fff;
     font-family: tahoma;
   }
-  #container{
-      margin: 50px auto;
-      perspective: 600px;
-      width: 250px;
-      height: 250px;
+  .side{
+      display: inline-block;
+      float: right;
+      width: 50%;
+      height: 100%;
   }
-  #layer{
+  #box-container{
+      perspective: 600px;
+  }
+  #box{
       display: block;
       position: relative;
       height: 200px;
       width: 200px;
-      margin: 25px;
+      margin: 25% auto;
       background-color: #FF1D00;
+      box-shadow: #999 0 0 0 0;
       color: #FFF;
       text-align: center;
       font-size: 1.5em;
       line-height: 200px;
   }
-  #controls{
-      margin: 50px auto;
-      width: 300px;
+  #labels{
+      width: 100%;
+      display: block;
+      background-color: #ccc;
+      border-bottom: solid 1px #999;
+  }
+  .label{
+      display: inline-block;
+      padding: 5px 10px;
+      margin: 5px;
+      background-color: #aaa;
+      color: #fff;
+      text-decoration: none;
+      text-align: center;
+  }
+  #panels{
+      margin: auto;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+  }
+  .panel{
+      position: absolute;;
+      display: block;
+      top: 800px;
+      height: 200px;
+      width: 400px;
+      margin: 0 100px auto;
+      background-color: #cfcfcf;
+  }
+  .panel h3{
+      text-align: left;
+      padding-left: 1em;
+  }
+  .panel input{
+      vertical-align: bottom;
+  }
+  .panel div{
+      margin-bottom: 6px;
   }
   </style>
 </head>
 <body>
 
-    <div id="container">
-        <div id="layer">
-            Play With Me !
+    <div class="side" id="box-container">
+        <div id="box">
+            joon me !
         </div>
     </div>
 
-    <div id="controls">
-        <div>
-            <label for="fade">Fade : </label><input id="fade" type="range" defaultValue="1.0" min="0.0" max="1.0" step="0.1" />
-        </div><br />
-        <div>
-            <label for="rotate">Rotate : </label><input id="rotate" type="range" defaultValue="0" min="0" max="360" step="10" />
-        </div><br />
-        <div>
-            <label for="scale">Scale : </label><input id="scale" type="range"  defaultValue="1.0" min="0.0" max="2.0" step="0.1" />
+    <div class="side" id="controls-container">
+        <div id="labels">
+            <a href="#" class="label" id="fade" onclick="changePanel(this)">fade</a>
+            <a href="#" class="label" id="rotate" onclick="changePanel(this)">rotate</a>
+            <a href="#" class="label" id="scale" onclick="changePanel(this)">scale</a>
+            <a href="#" class="label" id="bgColor" onclick="changePanel(this)">background</a>
+            <a href="#" class="label" id="shadow" onclick="changePanel(this)">box-shadow</a>
+        </div>
+        <div id="panels">
+            <!-- fade panel -->
+            <div id="fade-panel" class="panel">
+                <h3>Change Opacity to <span id="current-opacity"></span></h3>
+                <span>0</span><input id="fade-range" type="range" defaultValue="1.0" min="0.0" max="1.0" step="0.1" /><span>1</span>
+            </div>
+
+            <!-- rotate panel -->
+            <div id="rotate-panel" class="panel">
+                <h3>Rotate to <span id="current-rotation"></span></h3>
+                <div>
+                    <label for="rotate-x-range">X : </label><span>0</span><input class="rotate-range" id="rotate-x-range" type="range" defaultValue="0" min="0" max="360" step="10" /><span>360</span>
+                </div>
+                <div>
+                    <label for="rotate-y-range">Y : </label><span>0</span><input class="rotate-range" id="rotate-y-range" type="range" defaultValue="0" min="0" max="360" step="10" /><span>360</span>
+                </div>
+                <div>
+                    <label for="rotate-z-range">Z : </label><span>0</span><input class="rotate-range" id="rotate-z-range" type="range" defaultValue="0" min="0" max="360" step="10" /><span>360</span>
+                </div>
+            </div>
+
+            <!-- scale panel -->
+            <div id="scale-panel" class="panel">
+                <h3>Scale to <span id="current-scale"></span></h3>
+                <div>
+                    <label for="scale-x-range">X : </label><span>0</span><input class="scale-range" id="scale-x-range" type="range"  defaultValue="1.0" min="0.0" max="2.0" step="0.1" /><span>2</span>
+                </div>
+                <div>
+                    <label for="scale-y-range">Y : </label><span>0</span><input class="scale-range" id="scale-y-range" type="range"  defaultValue="1.0" min="0.0" max="2.0" step="0.1" /><span>2</span>
+                </div>
+                <div>
+                    <label for="scale-z-range">Z : </label><span>0</span><input class="scale-range" id="scale-z-range" type="range"  defaultValue="1.0" min="0.0" max="2.0" step="0.1" /><span>2</span>
+                </div>
+            </div>
+
+            <!-- bgColor panel -->
+            <div id="bgColor-panel" class="panel">
+                <h3>bgColor <span id="current-bgColor"></span></h3>
+                <div>
+                    <label for="bgColor-red-range">Red : </label><span>0</span><input class="bgColor-range" id="bgColor-red-range" type="range"  defaultValue="255" min="0" max="250" step="10" /><span>250</span>
+                </div>
+                <div>
+                    <label for="bgColor-green-range">Green : </label><span>0</span><input class="bgColor-range" id="bgColor-green-range" type="range"  defaultValue="255" min="0" max="250" step="10" /><span>250</span>
+                </div>
+                <div>
+                    <label for="bgColor-blue-range">Blue : </label><span>0</span><input class="bgColor-range" id="bgColor-blue-range" type="range"  defaultValue="255" min="0" max="250" step="10" /><span>250</span>
+                </div>
+            </div>
+
+            <!-- box-shadow panel -->
+            <div id="shadow-panel" class="panel">
+                <h3>box shadow <span id="current-shadow"></span></h3>
+                <div>
+                    <label for="shadow-x-range">X : </label><span>0</span><input class="shadow-range" id="shadow-x-range" type="range"  defaultValue="0" min="0" max="20" step="1" /><span>20</span>
+                </div>
+                <div>
+                    <label for="shadow-y-range">Y : </label><span>0</span><input class="shadow-range" id="shadow-y-range" type="range"  defaultValue="0" min="0" max="20" step="1" /><span>20</span>
+                </div>
+                <div>
+                    <label for="shadow-blur-range">Blur : </label><span>0</span><input class="shadow-range" id="shadow-blur-range" type="range" defaultValue="0" min="0" max="20" step="1" /><span>20</span>
+                </div>
+                <div>
+                    <label for="shadow-spread-range">Spread : </label><span>0</span><input class="shadow-range" id="shadow-spread-range" type="range" defaultValue="0" min="0" max="20" step="1" /><span>20</span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -60,34 +164,120 @@
   <script src="../source/joon.js"></script>
   <script>
 
-    joon("#layer")
-        .startOn("#layer", "click")
-        .at(0, .5, easeOutSine, "changeBoxShadow", 0, 0, 0, 50, [200, 200, 200])
-        .at(0, .5, easeOutSine, "scaleTo", .8, .8, 1)
-        .at(.5, .3, easeInSine, "changeBoxShadow", 0, 0, 0, 0, [200, 200, 200])
-        .at(.5, .3, easeInSine, "scaleTo", 1, 1, 1);
+    // setting ranges default values
+    document.getElementById("fade-range").value = 1.0;
+    document.getElementById("rotate-x-range").value = 0;
+    document.getElementById("rotate-y-range").value = 0;
+    document.getElementById("rotate-z-range").value = 0;
+    document.getElementById("scale-x-range").value = 1.0;
+    document.getElementById("scale-y-range").value = 1.0;
+    document.getElementById("scale-z-range").value = 1.0;
+    document.getElementById("bgColor-red-range").value = 255;
+    document.getElementById("bgColor-green-range").value = 30;
+    document.getElementById("bgColor-blue-range").value = 0;
+    document.getElementById("shadow-x-range").value = 0;
+    document.getElementById("shadow-y-range").value = 0;
+    document.getElementById("shadow-blur-range").value = 0;
+    document.getElementById("shadow-spread-range").value = 0;
 
+    // show panel animation template
+    joon("@show-panel")
+        .at(0, .5, easeInSine, "moveTo", 170, 0);
 
-      joon("#layer")
-        .startOn("#fade", "change")
-        .at(0, .5, easeOutSine, "fadeTo", function(){ return document.getElementById("fade").value; })
-        .then(function(){
-            console.log("fade to " + document.getElementById("fade").value);
-        });
+    // hide panel animation template
+    joon("@hide-panel")
+        .at(0, .5, easeInSine, "moveTo", 800, 0);
 
-      joon("#layer")
-        .startOn("#rotate", "change")
-        .at(0, .5, easeOutSine, "rotate", 0, function(){ return document.getElementById("rotate").value; }, 0)
-        .then(function(){
-            console.log("rotate to " + document.getElementById("rotate").value);
-        });
+    // show and hide panels
+    function changePanel(panel){
+        // hide currently visible panel
+        joon(".shown")
+            .at(0, "hide-panel")
+            .then(function(elements){
+                elements[0].classList.remove("shown");
+            })
+            .start();
 
-    joon("#layer")
-      .startOn("#scale", "change")
-      .at(0, .5, easeOutSine, "scaleTo", function(){ return document.getElementById("scale").value; }, function(){ return document.getElementById("scale").value; }, 1)
-      .then(function(){
-          console.log("scale to " + document.getElementById("scale").value);
-      });
+        // show clicked panel
+        joon("#" + panel.id + "-panel")
+            .at(0, "show-panel")
+            .then(function(elements){
+                elements[0].classList.add("shown");
+            })
+            .start();
+
+            return false;
+    }
+
+        // fade
+        joon("#box")
+            .startOn("#fade-range", "change")
+            .at(0, .5, easeOutSine, "fadeTo", function(){ return document.getElementById("fade-range").value; })
+            .then(function(){
+                document.getElementById("current-opacity").innerText = document.getElementById("fade-range").value;
+            });
+
+        // rotate
+        joon("#box")
+            .startOn(".rotate-range", "change")
+            .at(0, .5, easeOutSine, "rotate",
+                function(){ return document.getElementById("rotate-x-range").value; }, // x parameter
+                function(){ return document.getElementById("rotate-y-range").value; }, // y parameter
+                function(){ return document.getElementById("rotate-z-range").value; }) // z parameter
+            .then(function(){
+                document.getElementById("current-rotation").innerText = "(" +
+                        document.getElementById("rotate-x-range").value + ", " +
+                        document.getElementById("rotate-y-range").value + ", " +
+                        document.getElementById("rotate-z-range").value + ")";
+            });
+
+        // scale
+        joon("#box")
+            .startOn(".scale-range", "change")
+            .at(0, .5, easeOutSine, "scaleTo",
+                function(){ return document.getElementById("scale-x-range").value; },
+                function(){ return document.getElementById("scale-y-range").value; },
+                function(){ return document.getElementById("scale-z-range").value; })
+            .then(function(){
+              document.getElementById("current-scale").innerText = "(" +
+                      document.getElementById("scale-x-range").value + ", " +
+                      document.getElementById("scale-y-range").value + ", " +
+                      document.getElementById("scale-z-range").value + ")";
+            });
+
+          // change background color
+          joon("#box")
+            .startOn(".bgColor-range", "mouseover")
+            .at(0, .5, easeOutSine, "changeColor", "background-color",function(){
+                var red = parseFloat(document.getElementById("bgColor-red-range").value);
+                var green = parseFloat(document.getElementById("bgColor-green-range").value);
+                var blue = parseFloat(document.getElementById("bgColor-blue-range").value);
+                return [red, green, blue];
+            })
+            .then(function(){
+                document.getElementById("current-bgColor").innerText = "[" +
+                document.getElementById("bgColor-red-range").value + ", " +
+                document.getElementById("bgColor-green-range").value + ", " +
+                document.getElementById("bgColor-blue-range").value + "]";
+            });
+
+            // change box-shadow
+            joon("#box")
+              .startOn(".shadow-range", "change")
+              .at(0, .5, easeOutSine, "changeBoxShadow",
+                    function(){ return document.getElementById("shadow-x-range").value; },
+                    function(){ return document.getElementById("shadow-y-range").value; },
+                    function(){ return document.getElementById("shadow-blur-range").value; },
+                    function(){ return document.getElementById("shadow-spread-range").value; },
+                    [153, 153, 153]
+                )
+              .then(function(){
+                  document.getElementById("current-shadow").innerText = "(" +
+                          document.getElementById("shadow-x-range").value + ", " +
+                          document.getElementById("shadow-y-range").value + ", " +
+                          document.getElementById("shadow-blur-range").value + ", " +
+                          document.getElementById("shadow-spread-range").value + ")";
+              });
 
   </script>
 </body>

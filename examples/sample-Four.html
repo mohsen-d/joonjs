@@ -1,0 +1,84 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+  body{
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    background-color: #fff;
+    font-family: tahoma;
+  }
+  h1{
+      text-align: center;
+      color: #ccc;
+      margin: 50px auto;
+      padding: 0;
+  }
+.container{
+      width: 400px;
+      height: 200px;
+      margin: 0px auto;
+      border-bottom: solid 1px #ccc;
+      position: relative;
+  }
+  .box{
+      background-color: #FF004C;
+      width: 50px;
+      height: 50px;
+      position: relative;
+      top: 160px;
+      margin: auto;
+      cursor: pointer;
+      z-index: 1;
+  }
+  .box:hover{
+      background-color: #CE102D;
+  }
+  #curve-move-container{
+      width: 400px;
+  }
+  #curve-move-box{
+      left: 10px;
+      margin: 0;
+      border-radius: 50%;
+  }
+  #controls{
+      width:300px;
+      text-align: center;
+      margin: 180px auto 0;
+  }
+  </style>
+</head>
+<body>
+
+    <h1>Use buttons below to control the animation</h1>
+
+    <div id="curve-move-container" class="container">
+        <div id="curve-move-box" class="box curve-move-box-left"></div>
+    </div>
+    <div id="controls">
+        <input type="button" id="btn-start" value="Start" />
+        <input type="button" id="btn-pause" value="Pause" />
+        <input type="button" id="btn-resume" value="Resume" />
+    </div>
+
+    <!-- scripts -->
+    <script src="../bower_components/bowser/src/bowser.js"></script>
+    <script src="../source/tweens.js"></script>
+    <script src="../source/joon.js"></script>
+    <script>
+
+        joon("#curve-move-box")
+            .startOn("#btn-start", "click")
+            .pauseOn("#btn-pause", "click")
+            .resumeOn("#btn-resume", "click")
+            .at(0, 1.5, [easeOutSine, easeInSine], "moveTo", "-165", "+165")
+            .at(1.5, .5, [easeInSine, easeOutSine], "moveTo", "+165", "+165")
+            .at(1.9, .4, [easeOutSine, easeInSine], "moveTo", "+165", "-165")
+            .at(2.1, .4, [easeInSine, easeOutSine], "moveTo", "-165", "-165")
+            .loop(5);
+
+    </script>
+</body>
+</html>

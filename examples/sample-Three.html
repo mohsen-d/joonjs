@@ -9,10 +9,16 @@
     background-color: #fff;
     font-family: tahoma;
   }
+  h1{
+      text-align: center;
+      color: #ccc;
+      margin: 50px auto;
+      padding: 0;
+  }
 .container{
       width: 200px;
       height: 200px;
-      margin: 50px 10px;
+      margin: 0px 10px;
       border-bottom: solid 1px #ccc;
       position: relative;
       display: inline-block;
@@ -65,6 +71,7 @@
 </head>
 <body>
 
+    <h1>Click on each item to see the animation</h1>
     <div id="jump-container" class="container">
         <div id="jump-box" class="box"></div>
         <div id="jump-box-shadow" class="shadow"></div>
@@ -114,9 +121,8 @@
 
         joon("#curve-move-box")
             .startOn("#curve-move-box", "click")
-            .pauseOn(document, "dblclick")
-            .resumeOn("#curve-move-box", "dblclick")
-            .at(0, "curve-move-left");
+            .at(0, "curve-move-left")
+            .loop(5);
 
         joon("#jump-closer-box")
             .startOn("#jump-closer-box", "click")
