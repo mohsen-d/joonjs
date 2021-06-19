@@ -4,7 +4,7 @@
  * a javascript animation library
  *
  * Copyright 2017, Mohsen Dorparasti <dorparasti@gmail.com>
- * http://dorparasti.ir
+ * https://github.com/mohsen-d
  *
  *
  * Released under the MIT Licence
@@ -45,6 +45,7 @@ window.joon = (function(){
         self.name = "joon.js";
         self.description = "a js animation library";
         self.author = "Mohsen Dorparasti <dorparasti[at]gmail.com>";
+        self.version = "1.0.0"
     }
 
     // all of the templates defined by you

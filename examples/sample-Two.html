@@ -193,7 +193,7 @@
         // hide currently visible panel
         joon(".shown")
             .at(0, "hide-panel")
-            .then(function(elements){
+            .finally(function(elements){
                 elements[0].classList.remove("shown");
             })
             .start();
@@ -201,7 +201,7 @@
         // show clicked panel
         joon("#" + panel.id + "-panel")
             .at(0, "show-panel")
-            .then(function(elements){
+            .finally(function(elements){
                 elements[0].classList.add("shown");
             })
             .start();
@@ -213,7 +213,7 @@
         joon("#box")
             .startOn("#fade-range", "change")
             .at(0, .5, easeOutSine, "fadeTo", function(){ return document.getElementById("fade-range").value; })
-            .then(function(){
+            .finally(function(){
                 document.getElementById("current-opacity").innerText = document.getElementById("fade-range").value;
             });
 
@@ -224,7 +224,7 @@
                 function(){ return document.getElementById("rotate-x-range").value; }, // x parameter
                 function(){ return document.getElementById("rotate-y-range").value; }, // y parameter
                 function(){ return document.getElementById("rotate-z-range").value; }) // z parameter
-            .then(function(){
+            .finally(function(){
                 document.getElementById("current-rotation").innerText = "(" +
                         document.getElementById("rotate-x-range").value + ", " +
                         document.getElementById("rotate-y-range").value + ", " +
@@ -238,7 +238,7 @@
                 function(){ return document.getElementById("scale-x-range").value; },
                 function(){ return document.getElementById("scale-y-range").value; },
                 function(){ return document.getElementById("scale-z-range").value; })
-            .then(function(){
+            .finally(function(){
               document.getElementById("current-scale").innerText = "(" +
                       document.getElementById("scale-x-range").value + ", " +
                       document.getElementById("scale-y-range").value + ", " +
@@ -254,7 +254,7 @@
                 var blue = parseFloat(document.getElementById("bgColor-blue-range").value);
                 return [red, green, blue];
             })
-            .then(function(){
+            .finally(function(){
                 document.getElementById("current-bgColor").innerText = "[" +
                 document.getElementById("bgColor-red-range").value + ", " +
                 document.getElementById("bgColor-green-range").value + ", " +
@@ -271,7 +271,7 @@
                     function(){ return document.getElementById("shadow-spread-range").value; },
                     [153, 153, 153]
                 )
-              .then(function(){
+              .finally(function(){
                   document.getElementById("current-shadow").innerText = "(" +
                           document.getElementById("shadow-x-range").value + ", " +
                           document.getElementById("shadow-y-range").value + ", " +

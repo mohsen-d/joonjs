@@ -108,14 +108,14 @@
         joon("#fast-move-box")
             .startOn(".fast-move-box-left", "click")
             .at(0, "fast-move-left")
-            .then(function(){
+            .finally(function(){
                 document.getElementById("fast-move-box").className = "box fast-move-box-right";
             });
 
         joon("#fast-move-box")
             .startOn(".fast-move-box-right", "click")
             .at(0, "fast-move-right")
-            .then(function(){
+            .finally(function(){
                 document.getElementById("fast-move-box").className = "box fast-move-box-left";
             });
 
