@@ -4,7 +4,8 @@
  * a javascript animation library
  *
  * Copyright 2017, Mohsen Dorparasti <dorparasti@gmail.com>
- * https://github.com/mohsen-d
+*
+* https://github.com/mohsen-d
  *
  *
  * Released under the MIT Licence
