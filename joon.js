@@ -18,7 +18,6 @@ window.joon = (function(){
 
     function joon(selector) {
         var self = this;
-
         // @templateName
         // means you want to define a template (several actions together) to use in animations later
         if(selector.startsWith("@")){
@@ -547,7 +546,6 @@ window.joon = (function(){
     **/
     joon.prototype._addAction = function(action){
         var self = this;
-
         if(self._isTemplate){
           if(joon._templates[self._templateName]){
             joon._templates[self._templateName].push(action);
@@ -621,22 +619,14 @@ window.joon = (function(){
                     duration: getRandomNumericParameter(action.possibleDurations, true)
                 };
 
-                console.log(action);
-
                 if(!isEmpty(action.possibleStarts)){
-                    console.log("its own start-time")
                     // get a random value for startTime from provided array
                     elm.actionsParameters[action.index].startTime = Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
                 }
                 else if (!isEmpty(action.precedentActionIndex)) {
                     var precedentAction = self._actions[action.precedentActionIndex];
-
-                    console.log("dependent");
-                    console.log("parent : " + elm.actionsParameters[precedentAction.index].startTime + " + " + elm.actionsParameters[precedentAction.index].duration);
-
                     elm.actionsParameters[action.index].startTime = elm.actionsParameters[precedentAction.index].startTime + elm.actionsParameters[precedentAction.index].duration * 1000;
 
-                    console.log("self : " + elm.actionsParameters[action.index].startTime);
                 }
             }
         }
@@ -772,21 +762,134 @@ window.joon = (function(){
         }
     };
 
-    joon.prototype._createAction = function([start, duration, easingFunc, actionName, ...actionParams]){
+    joon.prototype._createAndAddAction = function([start, ...actions]){
         var self = this;
+        
+        for(var i = 0; i <= actions.length - 1; i++){
+            var _action = self[actions[i].do](actions[i].params);
+            _action.possibleStarts = start;
+            self._addAction(_action);
+        }
 
+        return self;
+    }
+
+    joon.prototype.moveTo = function(params){
+        var self = this;
         return {
-          index: self._actionIndex++,
-          name: actionName,
-          status: "not-started",
-          possibleArgs: actionParams,
-          possibleDurations: duration,
-          possibleStarts: start,
-          precedentActionIndex: null,
-          easingFunc: easingFunc
+            index: self._actionIndex++,
+            name: "moveTo",
+            status: "not-started",
+            possibleArgs: [params.x, params.y],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
         };
     }
 
+    joon.prototype.fadeTo = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "fadeTo",
+            status: "not-started",
+            possibleArgs: [params.opacity],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.scaleTo = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "scaleTo",
+            status: "not-started",
+            possibleArgs: [params.x, params.y, params.z],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.rotate = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "rotate",
+            status: "not-started",
+            possibleArgs: [params.x, params.y, params.z],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.skew = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "skew",
+            status: "not-started",
+            possibleArgs: [params.x, params.y],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.change = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "change",
+            status: "not-started",
+            possibleArgs: [params.property, params.value],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.changeColor = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "changeColor",
+            status: "not-started",
+            possibleArgs: [params.property, params.value],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.changeBoxShadow = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "changeBoxShadow",
+            status: "not-started",
+            possibleArgs: [params.x, params.y, params.blur, params.spread, params.color],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
+
+    joon.prototype.changeTextShadow = function(params){
+        var self = this;
+        return {
+            index: self._actionIndex++,
+            name: "changeTextShadow",
+            status: "not-started",
+            possibleArgs: [params.x, params.y, params.blur, params.color],
+            possibleDurations: params.duration,
+            precedentActionIndex: null,
+            easingFunc: params.easing
+        };
+    }
 
 
     /**
@@ -852,16 +955,14 @@ window.joon = (function(){
     joon.prototype.at = function(...params){
         var self = this;
 
-        // if there are more than 2 parameters,
-        // it means you are adding actions (either you are defining a template or an actual animation)
-        if(arguments.length > 2){
-            var action = self._createAction(params);
-            return self._addAction(action);
-        }
-        // else if there are only 2 parameters, it means you want to append a pre-defined template here
-        // so we find the template and append all actions defined there to our list of actions
-        else{
+        // if the second parameter is string, then it is a template name e.g. "@MoveToTopTemplate"
+        if(typeof arguments[1][0] === "string"){
             return self._appendTemplateActions(params);
+            
+        }
+        // else there are actions
+        else{
+            return self._createAndAddAction(params);
         }
     };
 
@@ -1162,7 +1263,7 @@ window.joon = (function(){
       * @return {string} transform rule value
     **/
     function getBrowserTransform(elm){
-        if(bowser.chrome || bowser.safari)
+        /*if(bowser.chrome || bowser.safari)
             return elm.style.webkitTransform;
 
         if(bowser.firefox)
@@ -1172,7 +1273,7 @@ window.joon = (function(){
             return elm.style.msTransform;
 
         if(bowser.opera)
-            return elm.style.OpTransform;
+            return elm.style.OpTransform;*/
 
         return elm.style.transform;
     }
@@ -1184,7 +1285,7 @@ window.joon = (function(){
       * @param {string} value - the new value for the transform rule
     **/
     function setBrowserTransform(elm, value){
-        if(bowser.chrome || bowser.safari)
+        /*if(bowser.chrome || bowser.safari)
           elm.style.webkitTransform = value;
 
         if(bowser.firefox)
@@ -1194,7 +1295,7 @@ window.joon = (function(){
           elm.style.msTransform = value;
 
         if(bowser.opera)
-          elm.style.OpTransform = value;
+          elm.style.OpTransform = value;*/
 
         elm.style.transform = value;
     }

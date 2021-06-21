@@ -1,0 +1,40 @@
+<html>
+    <head>
+        <style>
+            h1{
+                position: relative;
+                display: inline-block;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Recap Joon.js</h1>
+        <script src="../tweens.js" ></script>
+        <script src="../joon.js" ></script>
+        <script>
+            joon("h1")
+            .startOn(document, "click")
+            .at(0, {
+                        do: "moveTo",
+                        params: {
+                            x: 250,
+                            y: "+250",
+                            duration: 1,
+                            easing: easeOutElastic
+                        }
+                    }                    
+            )
+            .at(1, {
+                        do: "rotate",
+                        params: {
+                            x: 0,
+                            y: 0,
+                            z: "+360",
+                            duration: .8,
+                            easing: easeOutSine
+                        }
+                    }
+            );
+        </script>
+    </body>
+</html>
