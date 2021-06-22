@@ -5,15 +5,46 @@
                 position: relative;
                 display: inline-block;
             }
+            #step{
+                position: absolute;
+                width: 100%;
+                display: block;
+                top: 0;
+                left: 0;
+            }
+            #log{
+                position: absolute;
+                top: 20px;
+                left: 0;
+            }
         </style>
     </head>
     <body>
         <h1>Recap Joon.js</h1>
+        <div id="step"></div>
+        <div id="log"></div>
         <script src="../tweens.js" ></script>
         <script src="../joon.js" ></script>
         <script>
+            var step = 0;
             joon("h1")
             .startOn(document, "click")
+            .onStart(function(joon){
+                document.getElementById("log").innerText += "Animation started...\n";
+            })
+            .onComplete(function(joon){
+                document.getElementById("log").innerText += ("All " + joon._actions.length + " actions of animation are completed\n");
+            })
+            .onLoopStart(function(joon){
+                document.getElementById("log").innerText += "th loop started\n";
+            })
+            .onLoopComplete(function(joon){
+                document.getElementById("log").innerText += "th loop completed\n";
+            })
+            .onEachStep(function(joon){
+                step += 1;
+                //document.getElementById("log").innerText += ("step : " + step + "\n");
+            })
             .at(0, {
                         do: "moveTo",
                         params: {
@@ -34,7 +65,7 @@
                             easing: easeOutSine
                         }
                     }
-            );
+            ).loops(2);
         </script>
     </body>
 </html>

@@ -108,7 +108,6 @@ window.joon = (function(){
           {
               var initValue = window.getComputedStyle(elm, null).getPropertyValue(property);
 
-              console.log(initValue);
               // if the property is not defined, set all initial color as white
               if(isEmpty(initValue)){
                   elm.initialPropRgbColor[property] = [255, 255, 255];
@@ -121,8 +120,6 @@ window.joon = (function(){
                   elm.initialPropRgbColor[property] = [parseFloat(initValues[1]), parseFloat(initValues[2]), parseFloat(initValues[3])];
               }
           }
-
-          console.log(elm.initialPropRgbColor[property]);
 
           // this is an array containing [red, green, blue] values of final rgb color
           elm.finalPropRgbColor[property] = value;
@@ -631,6 +628,8 @@ window.joon = (function(){
             }
         }
 
+        if(self._totalLaps > 0 && self._onLoopStartCallback) self._onLoopStartCallback(self);
+
         // now run actions
         self._runActions();
     };
@@ -655,14 +654,14 @@ window.joon = (function(){
 
             self._completedLaps += 1;
 
-            // call the callback function if there is any
-            if(self._callback){
-                self._callback(self._elements);
-            }
+            if(self._totalLaps > 0 && self._onLoopCompleteCallback) self._onLoopCompleteCallback(self);
 
             if(self._totalLaps == "infinite" || self._totalLaps > self._completedLaps)
             {
                 self._run();
+            }
+            else{
+                if(self._onCompleteCallback) self._onCompleteCallback(self);
             }
 
             // animation is finished and ready to start again ;-)
@@ -680,6 +679,8 @@ window.joon = (function(){
                   self._apply(action, elm);
                 }
             }
+
+            if(self._onEachStepCallback) self._onEachStepCallback(self);
 
             requestAnimationFrame(self._runActions.bind(self));
         }
@@ -989,8 +990,28 @@ window.joon = (function(){
       *
       * @param {function} func - callback function
     **/
-    joon.prototype.finally = function(func){
-        this._callback = func;
+    joon.prototype.onComplete = function(func){
+        this._onCompleteCallback = func;
+        return this;
+    };
+
+    joon.prototype.onStart = function(func){
+        this._onStartCallback = func;
+        return this;
+    };
+
+    joon.prototype.onEachStep = function(func){
+        this._onEachStepCallback = func;
+        return this;
+    };
+
+    joon.prototype.onLoopStart = function(func){
+        this._onLoopStartCallback = func;
+        return this;
+    };
+
+    joon.prototype.onLoopComplete = function(func){
+        this._onLoopCompleteCallback = func;
         return this;
     };
 
@@ -1000,7 +1021,7 @@ window.joon = (function(){
       *
       * @param {(int|string)} laps - for infinite loops send word "infinite" as parameter
     **/
-    joon.prototype.loop = function(laps){
+    joon.prototype.loops = function(laps){
         var self = this;
 
         self._totalLaps = laps;
@@ -1015,6 +1036,7 @@ window.joon = (function(){
     joon.prototype.start = function(){
         var self = this;
         self._completedLaps = 0;
+        if(self._onStartCallback) self._onStartCallback(self);
         self._run();
         self._started = true;
     };
@@ -1090,7 +1112,6 @@ window.joon = (function(){
     **/
     function hasInitValue(elm, prop){
         var x = !isEmpty(elm.initialPropValue[prop]) || !isEmpty(elm.initialPropRgbColor[prop]);
-        console.log(x);
         return x;
     }
 
