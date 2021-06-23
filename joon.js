@@ -627,15 +627,17 @@ window.joon = (function(){
 
                 if(!isEmpty(action.possibleStarts)){
                     // get a random value for startTime from provided array
-                    elm.actionsParameters[action.index].startTime = Date.now() + getRandomNumericParameter(action.possibleStarts, true) * 1000
+                    var ElmActionStart = !!elm.initialDelay ?  elm.initialDelay + getRandomNumericParameter(action.possibleStarts, true) : getRandomNumericParameter(action.possibleStarts, true);
+                    elm.actionsParameters[action.index].startTime = Date.now() + (ElmActionStart * 1000);
                 }
                 else if (!isEmpty(action.precedentActionIndex)) {
                     var precedentAction = self._actions[action.precedentActionIndex];
                     elm.actionsParameters[action.index].startTime = elm.actionsParameters[precedentAction.index].startTime + elm.actionsParameters[precedentAction.index].duration * 1000;
-
                 }
             }
         }
+
+        
 
         if(self._totalLaps > 0 && self._onLoopStartCallback) self._onLoopStartCallback(self);
 
@@ -679,7 +681,7 @@ window.joon = (function(){
         else{
             for(var action of actionsToRun) {
                 if(self._isSameActionInProgress(action)){
-                    continue;
+                    //continue;
                 }
 
                 action.status = "in-progress";
@@ -704,6 +706,10 @@ window.joon = (function(){
     **/
     joon.prototype._apply = function(action, elm){
         var self = this;
+
+        if(elm.actionsParameters[action.index].applied){
+            return;
+        }
 
         // extracting parameters
         var startTime = elm.actionsParameters[action.index].startTime;
@@ -1026,6 +1032,14 @@ window.joon = (function(){
 
     joon.prototype.initialDelay = function(delay){
         this._initialDelay = delay * 1000;
+        return this;
+    }
+
+    joon.prototype.elementsInitialDelay = function(delayFunc){
+        for(var i = 0; i < this._elements.length; i++){
+            this._elements[i].initialDelay = delayFunc(i);
+        }
+        
         return this;
     }
 

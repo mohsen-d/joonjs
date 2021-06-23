@@ -63,7 +63,7 @@
                 }
             });
 
-            joon(".red")
+            /*joon(".red")
             .startOn(document, "click")
             .at(0, "template").loops("infinite");
 
@@ -75,7 +75,14 @@
             joon(".green")
             .startOn(document, "click")
             .initialDelay(.25)
-            .at(0, "template").loops("infinite");
+            .at(0, "template").loops("infinite");*/
+
+            joon("span")
+            .startOn(document, "click")
+            .elementsInitialDelay(function(elementIndex){
+                return elementIndex * .15;
+            })
+            .at(0, "template").loops(10);
 
         </script>
     </body>
