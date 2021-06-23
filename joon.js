@@ -1015,6 +1015,11 @@ window.joon = (function(){
         return this;
     };
 
+    joon.prototype.initialDelay = function(delay){
+        this._initialDelay = delay * 1000;
+        return this;
+    }
+
     /**
       * loop() function allows you to say how many times animation should run
       *
@@ -1037,7 +1042,9 @@ window.joon = (function(){
         var self = this;
         self._completedLaps = 0;
         if(self._onStartCallback) self._onStartCallback(self);
-        self._run();
+        setTimeout(() => {
+            self._run();
+        }, self._initialDelay); 
         self._started = true;
     };
 

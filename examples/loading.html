@@ -1,0 +1,82 @@
+<html>
+    <head>
+        <style>
+            #container{
+                display: flex;
+                height: 100%;
+                align-items: center;
+                justify-content: center;
+            }
+            #loader{
+                
+                margin: auto;
+                text-align: center;
+            }
+            #loader span{
+                display: inline-block;
+                position: relative;
+                margin-right: 5px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+            }
+            .red{
+                background-color: red;
+            }
+            .blue{
+                background-color: blue;
+            }
+            .green{
+                background-color: green;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <div id="loader">
+                <span class="red"></span>
+                <span class="blue"></span>
+                <span class="green"></span>
+            </div>
+        </div>
+
+        <script src="../tweens.js"></script>
+        <script src="../joon.js"></script>
+        <script>
+            joon("@template")
+            .at(0, {
+                do: "moveTo",
+                params: {
+                    x: 100,
+                    y: 0,
+                    duration: .5,
+                    easing: easeOutSine
+                }
+            })
+            .at(.5, {
+                do: "moveTo",
+                params: {
+                    x: 0,
+                    y: 0,
+                    duration: .5,
+                    easing: easeOutSine
+                }
+            });
+
+            joon(".red")
+            .startOn(document, "click")
+            .at(0, "template").loops("infinite");
+
+            joon(".blue")
+            .startOn(document, "click")
+            .initialDelay(.15)
+            .at(0, "template").loops("infinite");
+
+            joon(".green")
+            .startOn(document, "click")
+            .initialDelay(.25)
+            .at(0, "template").loops("infinite");
+
+        </script>
+    </body>
+</html>
