@@ -45,7 +45,16 @@ window.joon = (function(){
         self.name = "joon.js";
         self.description = "a js animation library";
         self.author = "Mohsen Dorparasti <dorparasti[at]gmail.com>";
-        self.version = "1.0.0"
+        self.version = "1.0.0";
+
+        document.addEventListener("visibilitychange", function() {
+            if(document.visibilityState === "hidden"){
+                self.pause();
+            }
+            if(document.visibilityState === "visible"){
+                if(self._paused) self.resume();
+            }
+        });
     }
 
     // all of the templates defined by you
@@ -1508,6 +1517,9 @@ window.joon = (function(){
             }
         }, false);
     }
+
+
+    
 
     /**
      *  main constructor
