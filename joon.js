@@ -31,6 +31,7 @@ window.joon = (function(){
           self._elements = getElements(selector);
           self._totalLaps = 0;
           self._completedLaps = 0;
+          this._initialDelay = 0;
           // index of action in the list of actions
           self._actionIndex = 0;
           // whether animation started
@@ -612,32 +613,9 @@ window.joon = (function(){
             action.status = "not-started";
 
             for(var elm of self._elements){
-                if(!elm.actionsParameters) elm.actionsParameters = [];
-
-                elm.actionsParameters[action.index] = {
-                    // change in Values and final values should be calculated again
-                    calculated: false,
-                    // is action applied on the element
-                    applied: false,
-                    // get a random value for each parameter from provided array
-                    args: getRandomParameters(action.possibleArgs),
-                    // get a random value for duration from provided array
-                    duration: getRandomNumericParameter(action.possibleDurations, true)
-                };
-
-                if(!isEmpty(action.possibleStarts)){
-                    // get a random value for startTime from provided array
-                    var ElmActionStart = !!elm.initialDelay ?  elm.initialDelay + getRandomNumericParameter(action.possibleStarts, true) : getRandomNumericParameter(action.possibleStarts, true);
-                    elm.actionsParameters[action.index].startTime = Date.now() + (ElmActionStart * 1000);
-                }
-                else if (!isEmpty(action.precedentActionIndex)) {
-                    var precedentAction = self._actions[action.precedentActionIndex];
-                    elm.actionsParameters[action.index].startTime = elm.actionsParameters[precedentAction.index].startTime + elm.actionsParameters[precedentAction.index].duration * 1000;
-                }
+                self._prepareElement(elm, action, true);
             }
-        }
-
-        
+        }        
 
         if(self._totalLaps > 0 && self._onLoopStartCallback) self._onLoopStartCallback(self);
 
@@ -662,7 +640,7 @@ window.joon = (function(){
 
         // if all actions are completed
         if(actionsToRun.length === 0){
-
+            console.log("end of loop");
             self._completedLaps += 1;
 
             if(self._totalLaps > 0 && self._onLoopCompleteCallback) self._onLoopCompleteCallback(self);
@@ -680,10 +658,7 @@ window.joon = (function(){
         }
         else{
             for(var action of actionsToRun) {
-                if(self._isSameActionInProgress(action)){
-                    //continue;
-                }
-
+                
                 action.status = "in-progress";
 
                 for(var elm of self._elements){
@@ -741,10 +716,58 @@ window.joon = (function(){
 
             // now we can say the action is applied to the element
             elm.actionsParameters[action.index].applied = true;
-            // if all elements has completed this action, then set action as completed
-            self._updateActionStatus(action);
+
+
+            if((self._totalLaps == "infinite" || self._totalLaps > self._completedLaps) && self._independentLoops && action.index === self._actions.length - 1){
+                elm.actionsParameters.forEach(function (e, i) {
+                    self._prepareElement(elm, self._actions[i], false);
+                });
+            }else{
+                // if all elements has completed this action, then set action as completed
+                self._updateActionStatus(action);
+            }
         }
     };
+
+
+    joon.prototype._prepareElement = function(elm, action, isInitialRun){
+        var self = this;
+
+        if(!isInitialRun && elm.actionsParameters[action.index].loops >= self._totalLaps){
+            return;
+        }
+
+        if(!isInitialRun) action.status = "in-progress";
+
+        if(!elm.actionsParameters) elm.actionsParameters = [];
+        if(!elm.actionsParameters[action.index]) elm.actionsParameters[action.index] = {};
+
+        elm.actionsParameters[action.index].calculated = false;
+        elm.actionsParameters[action.index].applied = false;
+        elm.actionsParameters[action.index].args = getRandomParameters(action.possibleArgs);
+        elm.actionsParameters[action.index].duration = getRandomNumericParameter(action.possibleDurations, true);
+
+        if(!isEmpty(action.possibleStarts)){
+            // get a random value for startTime from provided array
+            var ElmActionStart = getRandomNumericParameter(action.possibleStarts, true);
+            if(isInitialRun && !!elm.initialDelay){
+                ElmActionStart +=   elm.initialDelay;
+            }
+            elm.actionsParameters[action.index].startTime = Date.now() + (ElmActionStart * 1000);
+        }
+        else if (!isEmpty(action.precedentActionIndex)) {
+            var precedentAction = self._actions[action.precedentActionIndex];
+            elm.actionsParameters[action.index].startTime = elm.actionsParameters[precedentAction.index].startTime + elm.actionsParameters[precedentAction.index].duration * 1000;
+        }
+
+        if(isInitialRun){
+            elm.actionsParameters[action.index].loops = 0;            
+        } 
+        else{
+            elm.actionsParameters[action.index].loops += 1;
+        }
+    }
+
 
     /**
       * _isSameActionInProgress() function checks if another action of the same type is already in progress
@@ -1056,6 +1079,11 @@ window.joon = (function(){
 
         return self;
     };
+
+    joon.prototype.independentLoops = function(hasIndependentLoops){
+        this._independentLoops = hasIndependentLoops;
+        return this;
+    }
 
     /**
       * start() function starts the animation. after you defined all actions using at() and are not willing to use events

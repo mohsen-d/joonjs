@@ -33,6 +33,7 @@
     </head>
     <body>
         <div id="container">
+            <div id="log"></div>
             <div id="loader">
                 <span class="red"></span>
                 <span class="blue"></span>
@@ -76,13 +77,18 @@
             .startOn(document, "click")
             .initialDelay(.25)
             .at(0, "template").loops("infinite");*/
-
+            var loop = 0;
             joon("span")
             .startOn(document, "click")
-            .elementsInitialDelay(function(elementIndex){
-                return elementIndex * .15;
+            .onEachStep(function(){
+                console.log("yet another step");
             })
-            .at(0, "template").loops(10);
+            .elementsInitialDelay(function(elementIndex){
+                return elementIndex * .1;
+            })
+            .at(0, "template")
+            .independentLoops(true)
+            .loops(10);
 
         </script>
     </body>
