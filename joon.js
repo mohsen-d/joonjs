@@ -640,8 +640,7 @@ window.joon = (function(){
 
         // if all actions are completed
         if(actionsToRun.length === 0){
-            console.log("end of loop");
-            self._completedLaps += 1;
+            self._completedLaps = self._independentLoops ?  self._totalLaps :  self._completedLaps + 1;
 
             if(self._totalLaps > 0 && self._onLoopCompleteCallback) self._onLoopCompleteCallback(self);
 
@@ -713,12 +712,12 @@ window.joon = (function(){
         // if out of time , then jump to final values
         else{
             self._actionsFinalStepFunctions[action.name](elm, params);
-
+            
             // now we can say the action is applied to the element
             elm.actionsParameters[action.index].applied = true;
 
 
-            if((self._totalLaps == "infinite" || self._totalLaps > self._completedLaps) && self._independentLoops && action.index === self._actions.length - 1){
+            if((self._totalLaps == "infinite" || self._totalLaps > elm.actionsParameters[action.index].loops) && self._independentLoops && action.index === self._actions.length - 1){
                 elm.actionsParameters.forEach(function (e, i) {
                     self._prepareElement(elm, self._actions[i], false);
                 });
@@ -742,8 +741,9 @@ window.joon = (function(){
         if(!elm.actionsParameters) elm.actionsParameters = [];
         if(!elm.actionsParameters[action.index]) elm.actionsParameters[action.index] = {};
 
-        elm.actionsParameters[action.index].calculated = false;
+        
         elm.actionsParameters[action.index].applied = false;
+        elm.actionsParameters[action.index].calculated = false;
         elm.actionsParameters[action.index].args = getRandomParameters(action.possibleArgs);
         elm.actionsParameters[action.index].duration = getRandomNumericParameter(action.possibleDurations, true);
 

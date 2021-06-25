@@ -7,12 +7,11 @@
                 align-items: center;
                 justify-content: center;
             }
-            #loader{
-                
+            .loader{                
                 margin: auto;
                 text-align: center;
             }
-            #loader span{
+            .loader span{
                 display: inline-block;
                 position: relative;
                 margin-right: 5px;
@@ -34,7 +33,7 @@
     <body>
         <div id="container">
             <div id="log"></div>
-            <div id="loader">
+            <div id="loader" class="loader">
                 <span class="red"></span>
                 <span class="blue"></span>
                 <span class="green"></span>
@@ -54,7 +53,7 @@
                     easing: easeOutSine
                 }
             })
-            .at(.5, {
+            .at(.51, {
                 do: "moveTo",
                 params: {
                     x: 0,
@@ -77,12 +76,10 @@
             .startOn(document, "click")
             .initialDelay(.25)
             .at(0, "template").loops("infinite");*/
+            
             var loop = 0;
-            joon("span")
+            joon("#loader span")
             .startOn(document, "click")
-            .onEachStep(function(){
-                console.log("yet another step");
-            })
             .elementsInitialDelay(function(elementIndex){
                 return elementIndex * .1;
             })
