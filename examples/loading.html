@@ -128,6 +128,16 @@
                     duration: .4,
                     easing: easeOutSine
                 }
+            })
+            .at(0,{
+                do: "moveTo",
+                params: {
+                    x: 0,
+                    y: 0,
+                    duration: .4,
+                    endgame: true,
+                    easing: easeOutSine
+                }
             });
 
             
@@ -140,7 +150,7 @@
             })
             .at(0, "template")
             .independentLoops(true)
-            .loops("infinite");
+            .loops(10);
             
             
             

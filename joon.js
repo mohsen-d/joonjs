@@ -39,6 +39,7 @@ window.joon = (function(){
           // whether animation is paused
           self._paused = false;
           self._exitLoop = false;
+          self._isEndgame = false;
         }
 
         // all of the actions defined on selected elements
@@ -597,6 +598,7 @@ window.joon = (function(){
                     possibleDurations: action.possibleDurations,
                     precedentActionIndex: action.precedentActionIndex,
                     easingFunc: action.easingFunc,
+                    endgame: action.endgame,
                     includeInLoop: action.includeInLoop
                 });
             }
@@ -608,11 +610,11 @@ window.joon = (function(){
     /**
       * _run() function is the one which prepare actions in each loop.
     **/
-    joon.prototype._run = function(){
+    joon.prototype._run = function(actions){
         var self = this;
         
         // we should reset actions and elements' parameters in each loop of run
-        for(var action of self._actions){
+        for(var action of actions){
             action.status = "not-started";
 
             for(var elm of self._elements){
@@ -639,7 +641,8 @@ window.joon = (function(){
         }
 
         // filter actions that are not finished yet
-        var actionsToRun = self._actions.filter(a => a.status !== "completed");
+        var actionsToRun = self._actions.filter(a => !a.endgame && a.status !== "completed");
+        if(self._isEndgame) actionsToRun = self._actions.filter(a => a.endgame && a.status !== "completed");
 
         // if all actions are completed
         if(actionsToRun.length === 0){
@@ -649,10 +652,20 @@ window.joon = (function(){
 
             if((self._totalLoops == "infinite" || self._totalLoops > self._completedLoops) && !self._exitLoop)
             {
-                self._run();
+                var loopActions = self._actions.filter(a => !a.endgame && a.includeInLoop);
+                self._run(loopActions);
             }
-            else{
-                if(self._onCompleteCallback) self._onCompleteCallback(self);
+            else
+            {
+                var endGameActions = self._actions.filter(a => a.endgame && a.status !== "completed");
+                if(endGameActions.length > 0){
+                    self._isEndgame = true;
+                    self._run(endGameActions);
+                }
+                else{
+                    if(self._onCompleteCallback) self._onCompleteCallback(self);
+                    self._isEndgame = false;
+                }
             }
 
             // animation is finished and ready to start again ;-)
@@ -720,7 +733,7 @@ window.joon = (function(){
             elm.actionsParameters[action.index].applied = true;
 
 
-            if((self._totalLoops == "infinite" || self._totalLoops > elm.actionsParameters[action.index].loops) && !self._exitLoop && self._independentLoops && _allActionsAppliedToElement(elm)){
+            if((self._totalLoops == "infinite" || self._totalLoops > elm.actionsParameters[action.index].loops) && !action.endgame && !self._exitLoop && self._independentLoops && _allActionsAppliedToElement(elm)){
 
                 elm.actionsParameters.forEach(function (e, i) {
                     var action = self._actions[i];
@@ -736,7 +749,7 @@ window.joon = (function(){
 
     function _allActionsAppliedToElement(elm){
         return elm.actionsParameters.every(function (e) {
-            return e.applied || e.forEndGame;
+            return e.applied || e.endgame;
         });
     }
 
@@ -755,6 +768,7 @@ window.joon = (function(){
         
         elm.actionsParameters[action.index].applied = false;
         elm.actionsParameters[action.index].calculated = false;
+        elm.actionsParameters[action.index].endgame = action.endgame;
         elm.actionsParameters[action.index].args = getRandomParameters(action.possibleArgs);
         elm.actionsParameters[action.index].duration = getRandomNumericParameter(action.possibleDurations, true);
 
@@ -839,7 +853,7 @@ window.joon = (function(){
             possibleDurations: params.duration,
             precedentActionIndex: null,
             easingFunc: params.easing,
-            includeInLoop: true,
+            endgame: params.endgame != undefined ? params.endgame : false,
             includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
         
@@ -1131,7 +1145,7 @@ window.joon = (function(){
         self._exitLoop = false;
         if(self._onStartCallback) self._onStartCallback(self);
         setTimeout(() => {
-            self._run();
+            self._run(self._actions);
         }, self._initialDelay); 
         self._started = true;
     };
