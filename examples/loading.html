@@ -6,86 +6,165 @@
                 height: 100%;
                 align-items: center;
                 justify-content: center;
+                flex-direction: column;
+                font-family: Verdana, Geneva, Tahoma, sans-serif;
+            }
+            #login{
+                position: relative;
+            }
+            form{
+                background-color:#f7f7f7;
+                border:solid 1px #c7c7c7;
+                border-radius: 5%;
+                position: relative;
+                z-index: 1;
+                padding: 20px 10px;
+            }
+            #login label{
+                display: inline-block;
+                width: 100px;
+                text-align: right;
+            }
+            #login div{
+                margin-bottom: 10px;
+            }
+            #login div:last-of-type{
+                text-align: right;
+            }
+            #login input{
+                border: solid 1px #c7c7c7;
+                padding: 5px;
             }
             .loader{                
                 margin: auto;
                 text-align: center;
+                position: relative;
+                top: -35px;
+                z-index: 0;
+                padding-right: 10px;
             }
             .loader span{
                 display: inline-block;
                 position: relative;
-                margin-right: 5px;
-                width: 20px;
-                height: 20px;
+                margin-right: 1px;
+                width: 10px;
+                height: 10px;
                 border-radius: 50%;
+                background-color: rgb(116, 192, 253);
             }
             .red{
-                background-color: red;
+                /*background-color: red;*/
             }
             .blue{
-                background-color: blue;
+                /*background-color: blue;*/
             }
             .green{
-                background-color: green;
+                /*background-color: green;*/
             }
         </style>
     </head>
     <body>
         <div id="container">
-            <div id="log"></div>
-            <div id="loader" class="loader">
-                <span class="red"></span>
-                <span class="blue"></span>
-                <span class="green"></span>
+            <div id="login">
+                <form onsubmit="We(event)">
+                    <div>
+                    <label for="username">Username : </label>
+                    <input type="text" id="username" /></div>
+                    <div>
+                    <label for="password">Password : </label>
+                    <input type="password" id="password" /></div>
+                    <div>
+                    <input type="button" onclick="startAnime()" value="Start"></button>
+                    <input type="button" onclick="pauseAnime()" value="Pause"></button>
+                    <input type="button" onclick="resumeAnime()" value="Resume"></button>
+                    <input type="button" onclick="stopAnime()" value="Stop"></button>
+                    <input type="button" onclick="exitLoop()" value="Exit Loop"></button></div>
+                </form>
+                <div id="loader" class="loader">
+                    <span class="red"></span>
+                    <span class="blue"></span>
+                    <span class="green"></span>
+                </div>
             </div>
+           
         </div>
 
         <script src="../tweens.js"></script>
         <script src="../joon.js"></script>
         <script>
+
+
             joon("@template")
             .at(0, {
                 do: "moveTo",
                 params: {
                     x: 100,
                     y: 0,
-                    duration: .5,
+                    duration: .4,
+                    easing: easeOutSine,
+                    includeInLoop: false
+                }
+            })
+            .at({
+                    initialStart: .41,
+                    loopStart : 0
+                }, {
+                do: "moveTo",
+                params: {
+                    x: "-30",
+                    y: 0,
+                    duration: .4,
                     easing: easeOutSine
                 }
             })
-            .at(.51, {
+            .at({
+                    initialStart: .82,
+                    loopStart : .41
+                }, {
                 do: "moveTo",
                 params: {
-                    x: 0,
+                    x: "+30",
                     y: 0,
-                    duration: .5,
+                    duration: .4,
                     easing: easeOutSine
                 }
             });
 
-            /*joon(".red")
-            .startOn(document, "click")
-            .at(0, "template").loops("infinite");
-
-            joon(".blue")
-            .startOn(document, "click")
-            .initialDelay(.15)
-            .at(0, "template").loops("infinite");
-
-            joon(".green")
-            .startOn(document, "click")
-            .initialDelay(.25)
-            .at(0, "template").loops("infinite");*/
             
-            var loop = 0;
-            joon("#loader span")
-            .startOn(document, "click")
+            var anim;
+
+
+            anim = joon("#loader span")
             .elementsInitialDelay(function(elementIndex){
                 return elementIndex * .1;
             })
             .at(0, "template")
             .independentLoops(true)
-            .loops(10);
+            .loops("infinite");
+            
+            
+            
+
+            function startAnime(){                
+                anim.start();
+            }
+
+            function pauseAnime(){                
+                anim.pause();
+            }
+
+            function resumeAnime(){                
+                anim.resume();
+            }
+
+            function stopAnime(){                
+                anim.end();
+            }
+
+            function exitLoop(){                
+                anim.exitLoop();
+            }
+
 
         </script>
     </body>

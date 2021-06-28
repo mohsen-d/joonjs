@@ -29,8 +29,8 @@ window.joon = (function(){
         else{
           self._selector = selector;
           self._elements = getElements(selector);
-          self._totalLaps = 0;
-          self._completedLaps = 0;
+          self._totalLoops = 0;
+          self._completedLoops = 0;
           this._initialDelay = 0;
           // index of action in the list of actions
           self._actionIndex = 0;
@@ -38,6 +38,7 @@ window.joon = (function(){
           self._started = false;
           // whether animation is paused
           self._paused = false;
+          self._exitLoop = false;
         }
 
         // all of the actions defined on selected elements
@@ -592,9 +593,11 @@ window.joon = (function(){
                     // and template is appended at second 2
                     // then the actual start time of the action would be second 3
                     possibleStarts: RangeSum(action.possibleStarts, start),
+                    possibleLoopStarts: RangeSum(action.possibleLoopStarts, start),
                     possibleDurations: action.possibleDurations,
                     precedentActionIndex: action.precedentActionIndex,
-                    easingFunc: action.easingFunc
+                    easingFunc: action.easingFunc,
+                    includeInLoop: action.includeInLoop
                 });
             }
         }
@@ -607,7 +610,7 @@ window.joon = (function(){
     **/
     joon.prototype._run = function(){
         var self = this;
-
+        
         // we should reset actions and elements' parameters in each loop of run
         for(var action of self._actions){
             action.status = "not-started";
@@ -615,9 +618,9 @@ window.joon = (function(){
             for(var elm of self._elements){
                 self._prepareElement(elm, action, true);
             }
-        }        
+        }
 
-        if(self._totalLaps > 0 && self._onLoopStartCallback) self._onLoopStartCallback(self);
+        if(self._totalLoops > 0 && self._onLoopStartCallback) self._onLoopStartCallback(self);
 
         // now run actions
         self._runActions();
@@ -640,11 +643,11 @@ window.joon = (function(){
 
         // if all actions are completed
         if(actionsToRun.length === 0){
-            self._completedLaps = self._independentLoops ?  self._totalLaps :  self._completedLaps + 1;
+            self._completedLoops = self._independentLoops ?  self._totalLoops :  self._completedLoops + 1;
 
-            if(self._totalLaps > 0 && self._onLoopCompleteCallback) self._onLoopCompleteCallback(self);
+            if(self._totalLoops > 0 && self._onLoopCompleteCallback) self._onLoopCompleteCallback(self);
 
-            if(self._totalLaps == "infinite" || self._totalLaps > self._completedLaps)
+            if((self._totalLoops == "infinite" || self._totalLoops > self._completedLoops) && !self._exitLoop)
             {
                 self._run();
             }
@@ -717,9 +720,12 @@ window.joon = (function(){
             elm.actionsParameters[action.index].applied = true;
 
 
-            if((self._totalLaps == "infinite" || self._totalLaps > elm.actionsParameters[action.index].loops) && self._independentLoops && action.index === self._actions.length - 1){
+            if((self._totalLoops == "infinite" || self._totalLoops > elm.actionsParameters[action.index].loops) && !self._exitLoop && self._independentLoops && _allActionsAppliedToElement(elm)){
+
                 elm.actionsParameters.forEach(function (e, i) {
-                    self._prepareElement(elm, self._actions[i], false);
+                    var action = self._actions[i];
+                    if(action.includeInLoop)
+                        self._prepareElement(elm, self._actions[i], false);
                 });
             }else{
                 // if all elements has completed this action, then set action as completed
@@ -728,11 +734,16 @@ window.joon = (function(){
         }
     };
 
+    function _allActionsAppliedToElement(elm){
+        return elm.actionsParameters.every(function (e) {
+            return e.applied || e.forEndGame;
+        });
+    }
 
     joon.prototype._prepareElement = function(elm, action, isInitialRun){
         var self = this;
 
-        if(!isInitialRun && elm.actionsParameters[action.index].loops >= self._totalLaps){
+        if(!isInitialRun && elm.actionsParameters[action.index].loops >= self._totalLoops){
             return;
         }
 
@@ -749,11 +760,18 @@ window.joon = (function(){
 
         if(!isEmpty(action.possibleStarts)){
             // get a random value for startTime from provided array
-            var ElmActionStart = getRandomNumericParameter(action.possibleStarts, true);
-            if(isInitialRun && !!elm.initialDelay){
-                ElmActionStart +=   elm.initialDelay;
+            
+            if(isInitialRun){
+                var ElmActionStart = getRandomNumericParameter(action.possibleStarts, true);
+
+                if(!!elm.initialDelay) ElmActionStart += elm.initialDelay;
             }
+            else{
+                var ElmActionStart = getRandomNumericParameter(action.possibleLoopStarts, true);
+            }
+
             elm.actionsParameters[action.index].startTime = Date.now() + (ElmActionStart * 1000);
+
         }
         else if (!isEmpty(action.precedentActionIndex)) {
             var precedentAction = self._actions[action.precedentActionIndex];
@@ -767,7 +785,6 @@ window.joon = (function(){
             elm.actionsParameters[action.index].loops += 1;
         }
     }
-
 
     /**
       * _isSameActionInProgress() function checks if another action of the same type is already in progress
@@ -805,25 +822,36 @@ window.joon = (function(){
         var self = this;
         
         for(var i = 0; i <= actions.length - 1; i++){
-            var _action = self[actions[i].do](actions[i].params);
-            _action.possibleStarts = start;
+            var _action = self[actions[i].do](start, actions[i].params);
             self._addAction(_action);
         }
 
         return self;
     }
 
-    joon.prototype.moveTo = function(params){
+    joon.prototype.moveTo = function(start, params){
         var self = this;
-        return {
+        var a = {
             index: self._actionIndex++,
             name: "moveTo",
             status: "not-started",
             possibleArgs: [params.x, params.y],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: true,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
+        
+        if(typeof start === "object"){
+            a.possibleStarts = start.initialStart;
+            a.possibleLoopStarts = start.loopStart;
+        }
+        else{
+            a.possibleStarts = a.possibleLoopStarts = start;
+        }
+        
+        return a;
     }
 
     joon.prototype.fadeTo = function(params){
@@ -835,7 +863,8 @@ window.joon = (function(){
             possibleArgs: [params.opacity],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -848,7 +877,8 @@ window.joon = (function(){
             possibleArgs: [params.x, params.y, params.z],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -861,7 +891,8 @@ window.joon = (function(){
             possibleArgs: [params.x, params.y, params.z],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -874,7 +905,8 @@ window.joon = (function(){
             possibleArgs: [params.x, params.y],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -887,7 +919,8 @@ window.joon = (function(){
             possibleArgs: [params.property, params.value],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -900,7 +933,8 @@ window.joon = (function(){
             possibleArgs: [params.property, params.value],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -913,7 +947,8 @@ window.joon = (function(){
             possibleArgs: [params.x, params.y, params.blur, params.spread, params.color],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -926,7 +961,8 @@ window.joon = (function(){
             possibleArgs: [params.x, params.y, params.blur, params.color],
             possibleDurations: params.duration,
             precedentActionIndex: null,
-            easingFunc: params.easing
+            easingFunc: params.easing,
+            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
     }
 
@@ -993,7 +1029,7 @@ window.joon = (function(){
     **/
     joon.prototype.at = function(...params){
         var self = this;
-
+        
         // if the second parameter is string, then it is a template name e.g. "@MoveToTopTemplate"
         if(typeof arguments[1][0] === "string"){
             return self._appendTemplateActions(params);
@@ -1075,7 +1111,7 @@ window.joon = (function(){
     joon.prototype.loops = function(laps){
         var self = this;
 
-        self._totalLaps = laps;
+        self._totalLoops = laps;
 
         return self;
     };
@@ -1091,7 +1127,8 @@ window.joon = (function(){
     **/
     joon.prototype.start = function(){
         var self = this;
-        self._completedLaps = 0;
+        self._completedLoops = 0;
+        self._exitLoop = false;
         if(self._onStartCallback) self._onStartCallback(self);
         setTimeout(() => {
             self._run();
@@ -1126,6 +1163,9 @@ window.joon = (function(){
     };
 
 
+    joon.prototype.exitLoop = function(){
+        this._exitLoop = true;
+    }
 
 
     /**
