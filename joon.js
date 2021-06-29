@@ -39,7 +39,7 @@ window.joon = (function(){
           // whether animation is paused
           self._paused = false;
           self._exitLoop = false;
-          self._isEndgame = false;
+          self._isInEndgame = false;
         }
 
         // all of the actions defined on selected elements
@@ -642,7 +642,9 @@ window.joon = (function(){
 
         // filter actions that are not finished yet
         var actionsToRun = self._actions.filter(a => !a.endgame && a.status !== "completed");
-        if(self._isEndgame) actionsToRun = self._actions.filter(a => a.endgame && a.status !== "completed");
+        if(self._isInEndgame) {
+            actionsToRun = self._actions.filter(a => a.status !== "completed");
+        }
 
         // if all actions are completed
         if(actionsToRun.length === 0){
@@ -659,12 +661,12 @@ window.joon = (function(){
             {
                 var endGameActions = self._actions.filter(a => a.endgame && a.status !== "completed");
                 if(endGameActions.length > 0){
-                    self._isEndgame = true;
+                    self._isInEndgame = true;
                     self._run(endGameActions);
                 }
                 else{
                     if(self._onCompleteCallback) self._onCompleteCallback(self);
-                    self._isEndgame = false;
+                    self._isInEndgame = false;
                 }
             }
 
@@ -707,6 +709,14 @@ window.joon = (function(){
         var easingFunc = action.easingFunc;
         var params = elm.actionsParameters[action.index].args;
 
+
+
+        if(action.endgame){
+            if(!elm._isInEndgame){
+                return;
+            }
+        }
+
         var t = Date.now() - startTime;
 
         // t < 0 means time for this action has not come yet. be patient
@@ -732,17 +742,31 @@ window.joon = (function(){
             // now we can say the action is applied to the element
             elm.actionsParameters[action.index].applied = true;
 
+            // if all elements has completed this action, then set action as completed
+            self._updateActionStatus(action);
 
-            if((self._totalLoops == "infinite" || self._totalLoops > elm.actionsParameters[action.index].loops) && !action.endgame && !self._exitLoop && self._independentLoops && _allActionsAppliedToElement(elm)){
-
-                elm.actionsParameters.forEach(function (e, i) {
-                    var action = self._actions[i];
-                    if(action.includeInLoop)
-                        self._prepareElement(elm, self._actions[i], false);
-                });
-            }else{
-                // if all elements has completed this action, then set action as completed
-                self._updateActionStatus(action);
+            if(!action.endgame){
+                if(self._independentLoops){
+                    if(_allActionsAppliedToElement(elm)){
+                        if((self._totalLoops == "infinite" || self._totalLoops > elm.actionsParameters[action.index].loops) && !self._exitLoop){
+                                
+                                elm.actionsParameters.forEach(function (e, i) {
+                                    var action = self._actions[i];
+                                    if(action.includeInLoop)
+                                        self._prepareElement(elm, self._actions[i], false);
+                                });
+                                
+                        }
+                        else{                            
+                            self._isInEndgame = true;
+                            elm.actionsParameters.forEach(function (e, i) {
+                                var action = self._actions[i];
+                                if(action.endgame)
+                                    self._prepareElement(elm, self._actions[i], false);
+                            });
+                        }
+                    }
+                }
             }
         }
     };
@@ -756,7 +780,7 @@ window.joon = (function(){
     joon.prototype._prepareElement = function(elm, action, isInitialRun){
         var self = this;
 
-        if(!isInitialRun && elm.actionsParameters[action.index].loops >= self._totalLoops){
+        if(!action.endgame && !isInitialRun && elm.actionsParameters[action.index].loops >= self._totalLoops){
             return;
         }
 
@@ -771,6 +795,10 @@ window.joon = (function(){
         elm.actionsParameters[action.index].endgame = action.endgame;
         elm.actionsParameters[action.index].args = getRandomParameters(action.possibleArgs);
         elm.actionsParameters[action.index].duration = getRandomNumericParameter(action.possibleDurations, true);
+
+        if(self._isInEndgame && action.endgame){
+            elm._isInEndgame = true;
+        }
 
         if(!isEmpty(action.possibleStarts)){
             // get a random value for startTime from provided array
