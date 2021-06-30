@@ -618,7 +618,7 @@ window.joon = (function(){
             action.status = "not-started";
 
             for(var elm of self._elements){
-                self._prepareElement(elm, action, true);
+                self._prepareElement(elm, action);
             }
         }
 
@@ -753,7 +753,7 @@ window.joon = (function(){
                                 elm.actionsParameters.forEach(function (e, i) {
                                     var action = self._actions[i];
                                     if(action.includeInLoop)
-                                        self._prepareElement(elm, self._actions[i], false);
+                                        self._prepareElement(elm, self._actions[i]);
                                 });
                                 
                         }
@@ -762,7 +762,7 @@ window.joon = (function(){
                             elm.actionsParameters.forEach(function (e, i) {
                                 var action = self._actions[i];
                                 if(action.endgame)
-                                    self._prepareElement(elm, self._actions[i], false);
+                                    self._prepareElement(elm, self._actions[i]);
                             });
                         }
                     }
@@ -777,18 +777,32 @@ window.joon = (function(){
         });
     }
 
-    joon.prototype._prepareElement = function(elm, action, isInitialRun){
+    joon.prototype._prepareElement = function(elm, action){
         var self = this;
+        
+        if(!elm.actionsParameters) elm.actionsParameters = [];
+        if(!elm.actionsParameters[action.index]){
+            elm.actionsParameters[action.index] = {};
+            elm.actionsParameters[action.index].loops = 0;
+        } 
+
+        var isInitialRun = true;
+        if(self._independentLoops){
+            if(elm.actionsParameters[action.index].loops > 0){
+                isInitialRun = false;
+            }
+        }
+        else{
+            if(self._completedLoops > 0){
+                isInitialRun = false;
+            }
+        }
 
         if(!action.endgame && !isInitialRun && elm.actionsParameters[action.index].loops >= self._totalLoops){
             return;
         }
 
         if(!isInitialRun) action.status = "in-progress";
-
-        if(!elm.actionsParameters) elm.actionsParameters = [];
-        if(!elm.actionsParameters[action.index]) elm.actionsParameters[action.index] = {};
-
         
         elm.actionsParameters[action.index].applied = false;
         elm.actionsParameters[action.index].calculated = false;
@@ -810,6 +824,7 @@ window.joon = (function(){
             }
             else{
                 var ElmActionStart = getRandomNumericParameter(action.possibleLoopStarts, true);
+                if(!!elm.initialDelay && !self._independentLoops) ElmActionStart += elm.initialDelay;
             }
 
             elm.actionsParameters[action.index].startTime = Date.now() + (ElmActionStart * 1000);
@@ -819,13 +834,8 @@ window.joon = (function(){
             var precedentAction = self._actions[action.precedentActionIndex];
             elm.actionsParameters[action.index].startTime = elm.actionsParameters[precedentAction.index].startTime + elm.actionsParameters[precedentAction.index].duration * 1000;
         }
-
-        if(isInitialRun){
-            elm.actionsParameters[action.index].loops = 0;            
-        } 
-        else{
-            elm.actionsParameters[action.index].loops += 1;
-        }
+        
+        elm.actionsParameters[action.index].loops += 1;
     }
 
     /**
@@ -1208,7 +1218,6 @@ window.joon = (function(){
     joon.prototype.exitLoop = function(){
         this._exitLoop = true;
     }
-
 
     /**
       * getElements() function returns a list of all elements which match the specified selector
