@@ -1219,6 +1219,31 @@ window.joon = (function(){
         this._exitLoop = true;
     }
 
+    joon.prototype.end = function(){
+        var self = this;
+        
+        self._completedLoops = self._totalLoops;
+        self._isInEndgame = true;
+
+        self._actions.forEach(function(a){
+            if(!a.endgame) a.status = "completed";
+        });
+
+        self._elements.forEach(function(e){
+            e._isInEndgame = true;
+        });
+
+        self._actions.forEach(function(a){
+            if(a.endgame){
+                self._elements.forEach(function(e){
+                    self._prepareElement(e, a);
+                });
+            }
+        });
+        
+
+    }
+
     /**
       * getElements() function returns a list of all elements which match the specified selector
       *
