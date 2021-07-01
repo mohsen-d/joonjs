@@ -709,8 +709,6 @@ window.joon = (function(){
         var easingFunc = action.easingFunc;
         var params = elm.actionsParameters[action.index].args;
 
-
-
         if(action.endgame){
             if(!elm._isInEndgame){
                 return;
@@ -874,26 +872,55 @@ window.joon = (function(){
         var self = this;
         
         for(var i = 0; i <= actions.length - 1; i++){
-            var _action = self[actions[i].do](start, actions[i].params);
+            var _action = newAction(self, actions[i].do, start, actions[i].params);
             self._addAction(_action);
         }
 
         return self;
     }
 
-    joon.prototype.moveTo = function(start, params){
-        var self = this;
+    function newAction(context, actionName, start, params){
+        var self = context;
         var a = {
             index: self._actionIndex++,
-            name: "moveTo",
+            name: actionName,
             status: "not-started",
-            possibleArgs: [params.x, params.y],
             possibleDurations: params.duration,
             precedentActionIndex: null,
             easingFunc: params.easing,
             endgame: params.endgame != undefined ? params.endgame : false,
             includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
         };
+
+        switch (actionName) {
+            case "moveTo":
+                a.possibleArgs = [params.x, params.y];
+                break;
+            case "fadeTo":
+                a.possibleArgs = [params.opacity];
+                break;
+            case "scaleTo":
+                a.possibleArgs = [params.x, params.y, params.z];
+                break;
+            case "rotate":
+                a.possibleArgs = [params.x, params.y, params.z];
+                break;
+            case "skew":
+                a.possibleArgs = [params.x, params.y];
+                break;
+            case "change":
+                a.possibleArgs = [params.property, params.value];
+                break;
+            case "changeColor":
+                a.possibleArgs = [params.property, params.value];
+                break;
+            case "changeBoxShadow":
+                a.possibleArgs = [params.x, params.y, params.blur, params.spread, params.color];
+                break;
+            case "changeTextShadow":
+                a.possibleArgs = [params.x, params.y, params.blur, params.color];
+                break;
+        }
         
         if(typeof start === "object"){
             a.possibleStarts = start.initialStart;
@@ -905,119 +932,6 @@ window.joon = (function(){
         
         return a;
     }
-
-    joon.prototype.fadeTo = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "fadeTo",
-            status: "not-started",
-            possibleArgs: [params.opacity],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.scaleTo = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "scaleTo",
-            status: "not-started",
-            possibleArgs: [params.x, params.y, params.z],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.rotate = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "rotate",
-            status: "not-started",
-            possibleArgs: [params.x, params.y, params.z],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.skew = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "skew",
-            status: "not-started",
-            possibleArgs: [params.x, params.y],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.change = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "change",
-            status: "not-started",
-            possibleArgs: [params.property, params.value],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.changeColor = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "changeColor",
-            status: "not-started",
-            possibleArgs: [params.property, params.value],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.changeBoxShadow = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "changeBoxShadow",
-            status: "not-started",
-            possibleArgs: [params.x, params.y, params.blur, params.spread, params.color],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
-    joon.prototype.changeTextShadow = function(params){
-        var self = this;
-        return {
-            index: self._actionIndex++,
-            name: "changeTextShadow",
-            status: "not-started",
-            possibleArgs: [params.x, params.y, params.blur, params.color],
-            possibleDurations: params.duration,
-            precedentActionIndex: null,
-            easingFunc: params.easing,
-            includeInLoop: params.includeInLoop != undefined ? params.includeInLoop : true
-        };
-    }
-
 
     /**
       * startOn() function enables you to bind start of the animation to an event
@@ -1214,7 +1128,6 @@ window.joon = (function(){
         self._paused = false;
     };
 
-
     joon.prototype.exitLoop = function(){
         this._exitLoop = true;
     }
@@ -1240,7 +1153,6 @@ window.joon = (function(){
                 });
             }
         });
-        
 
     }
 
@@ -1675,9 +1587,6 @@ window.joon = (function(){
             }
         }, false);
     }
-
-
-    
 
     /**
      *  main constructor
